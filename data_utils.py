@@ -5,16 +5,17 @@ import reclab
 
 
 def generate_ground_truth_matrix(dimensions, distribution='uniform', quantization_method='binary'):
-    '''
+    """
     Generates a ground truth matrix.
 
     Parameters:
+        quantization_method:
+        distribution:
         dimensions: a tuple containing the dimensions of the matrix.
-        sampling_method: a string that specifies the method used to generate the ground truth.
 
     Returns:
         a mxn matrix containing the ground truth for each pair of m users and n items.
-    '''
+    """
     m, n = dimensions
 
     if distribution == 'uniform':
@@ -27,8 +28,8 @@ def generate_ground_truth_matrix(dimensions, distribution='uniform', quantizatio
     pass
 
 
-def ground_truth_matrix_to_dataset(matrix, sample_prob = 0.1, bias=None, shuffle=True):
-    '''
+def ground_truth_matrix_to_dataset(matrix, sample_prob=0.1, bias=None, shuffle=True):
+    """
     Converts a ground truth matrix to a recommender dataset.
 
     Parameters:
@@ -36,18 +37,18 @@ def ground_truth_matrix_to_dataset(matrix, sample_prob = 0.1, bias=None, shuffle
 
     Returns:
 
-    '''
+    """
     m, n = matrix.shape
 
     if shuffle:
-        matrix = np.random.shuffle(matrix)
+        np.random.shuffle(matrix)
 
     for i in range(m):
         for j in range(n):
             if random() > sample_prob:
                 matrix[i, j] = None
-    
-    if bias == None:
+
+    if bias is None:
         users = {}
         items = {}
         ratings = {}
@@ -57,7 +58,7 @@ def ground_truth_matrix_to_dataset(matrix, sample_prob = 0.1, bias=None, shuffle
             items[n] = matrix[:, i]
         for i in range(m):
             for j in range(n):
-                ratings[(i, j)] = matrix[i, j]    
+                ratings[(i, j)] = matrix[i, j]
     pass
 
 
