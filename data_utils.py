@@ -23,7 +23,7 @@ def generate_ground_truth_matrix(dimensions, distribution='uniform', quantizatio
             return np.random.randint(2, size=dimensions)
 
 
-def ground_truth_matrix_to_dataset(matrix, sample_prob=0.1, bias=None, shuffle=True):
+def ground_truth_matrix_to_dataset(matrix, sample_prob=0.1, bias=False, shuffle=True):
     """
     Converts a ground truth matrix to a recommender dataset.
 
@@ -41,13 +41,17 @@ def ground_truth_matrix_to_dataset(matrix, sample_prob=0.1, bias=None, shuffle=T
     if shuffle:
         np.random.shuffle(matrix)
 
-    if bias is None:
+    if not bias:
         ratings = {}
         for i in range(m):
             for j in range(n):
                 ratings[(i, j)] = sample(matrix[i, j], sample_prob)
         users, items = generate_users_items(ratings, m, n)
         return users, items, ratings
+
+    else:
+        # TODO: Introduce bias
+        return
 
 
 def generate_users_items(ratings, m, n):
@@ -72,4 +76,9 @@ def sample(value, sample_prob=0.1):
 
 
 if __name__ == '__main__':
-    print(generate_ground_truth_matrix((10, 10)))
+    truth = generate_ground_truth_matrix((10, 10))
+    print(truth)
+    users, items, ratings = ground_truth_matrix_to_dataset(truth)
+    print(users)
+    print(items)
+    print(ratings)
