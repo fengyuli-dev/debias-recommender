@@ -3,7 +3,7 @@ import pandas as pd
 from random import random
 import reclab
 
-
+# TODO: extract ground truth matrix from reclab
 def generate_ground_truth_matrix(dimensions, distribution='uniform', quantization_method='binary'):
     """
     Generates a ground truth matrix.
@@ -25,7 +25,9 @@ def generate_ground_truth_matrix(dimensions, distribution='uniform', quantizatio
 
 def ground_truth_matrix_to_dataset(matrix, sample_prob=0.1, bias=False, shuffle=True):
     """
-    Converts a ground truth matrix to a recommender dataset.
+    Converts a ground truth matrix to a recommender dataset. First simulate the observations on the ground truth
+    matrix, then convert them to a recommender dataset.
+    Bias can be introduced in the dataset.
 
     Parameters:
         matrix: a mxn matrix that contains the ground truth for each pair of m users and n items.
@@ -55,6 +57,9 @@ def ground_truth_matrix_to_dataset(matrix, sample_prob=0.1, bias=False, shuffle=
 
 
 def generate_users_items(ratings, m, n):
+    """
+    Helper function that takes in a dictionary of ratings and outputs two disctionarys of users and items.
+    """
     users = {}
     items = {}
     for i in range(m):
@@ -69,6 +74,9 @@ def generate_users_items(ratings, m, n):
 
 
 def sample(value, sample_prob=0.1):
+    """
+    Helper function that set the value to zero with probability (1 - sample_prob).
+    """
     if random() > sample_prob:
         return None
     else:
