@@ -28,7 +28,7 @@ def generate_ground_truth_matrix(dimensions, environment='random'):
         return env._get_dense_ratings()
 
 
-def ground_truth_matrix_to_dataset(R, quantization, sample_prob=0.1, bias=None, beta=1, noise=0.05):
+def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=None, beta=1, noise=0.05):
     """
     Converts a ground truth matrix to a recommender dataset. First simulate the observations on the ground truth
     matrix, then convert them to a recommender dataset.
@@ -43,8 +43,10 @@ def ground_truth_matrix_to_dataset(R, quantization, sample_prob=0.1, bias=None, 
     Returns:
         Same as reclab.data_utils.read_dataset()
     """
-    m, n = R.shape
-    np.random.shuffle(R)
+    m, n = matrix.shape
+    np.random.shuffle(matrix)
+
+    R = matrix.copy()
 
     # Normalize the ground truth and add Gaussian noise
     R = (R - R.min()) / (R.max() - R.min())
@@ -74,12 +76,14 @@ def ground_truth_matrix_to_dataset(R, quantization, sample_prob=0.1, bias=None, 
         return users, items, ratings
 
     elif bias == 'popularity':
-        average_ratings = np.mean(R, axis=0)
-        softmax_result = softmax(average_ratings, beta)
+        average_ratings = np.mean(matrix, axis=0)
+        exps = np.exp(beta * average_ratings)
+        softmax_result = exps / np.sum(exps)
         # Scale mean to one
-        softmax_result /= softmax_result.mean()
+        softmax_result /= np.mean(softmax_result)
         P = np.tile(softmax_result, m)
 
+        ratings = {}
         for i in range(m):
             for j in range(n):
                 ratings[(i, j)] = sample(R[i, j], P[i, j] * sample_prob)
@@ -87,12 +91,14 @@ def ground_truth_matrix_to_dataset(R, quantization, sample_prob=0.1, bias=None, 
         return users, items, ratings
 
     elif bias == 'active user':
-        average_ratings = np.mean(R, axis=1)
-        softmax_result = softmax(average_ratings, beta)
+        average_ratings = np.mean(matrix, axis=1)
+        exps = np.exp(beta * average_ratings)
+        softmax_result = exps / np.sum(exps)
         # Scale mean to one
-        softmax_result /= softmax_result.mean()
+        softmax_result /= np.mean(softmax_result)
         P = np.tile(softmax_result, (n, 1))
 
+        ratings = {}
         for i in range(m):
             for j in range(n):
                 ratings[(i, j)] = sample(R[i, j], P[i, j] * sample_prob)
@@ -100,8 +106,18 @@ def ground_truth_matrix_to_dataset(R, quantization, sample_prob=0.1, bias=None, 
         return users, items, ratings
 
     elif bias == 'full underlying':
-        pass
+        P = np.exp(matrix)
+        P /= np.sum(P)
+        P /= np.mean(P)
+        print(f'Mean: {P.mean()}')
     
+        ratings = {}
+        for i in range(m):
+            for j in range(n):
+                ratings[(i, j)] = sample(R[i, j], P[i, j] * sample_prob)
+        users, items = generate_users_items(ratings, m, n)
+        return users, items, ratings
+
     else:
         raise ValueError('Bias method not supported.')    
 
@@ -132,19 +148,11 @@ def sample(value, sample_prob=0.1):
         return value
 
 
-def softmax(user, beta):
-    """
-    Helper function that returns the softmax of a user's ratings. beta is a prameter that controls the amount of bias.
-    """
-    exps = np.exp(beta * user)
-    return exps / np.sum(exps)
-
-
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
         (1000, 1000), environment='latent-static-v1')
-    print(truth)
-    users, items, ratings = ground_truth_matrix_to_dataset(truth, 'onetofive')
+    # print(truth)
+    users, items, ratings = ground_truth_matrix_to_dataset(truth, 'onetofive', bias='full underlying')
     # print(users)
     # print(items)
     # print(ratings)
