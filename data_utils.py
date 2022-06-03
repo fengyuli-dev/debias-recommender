@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 import numpy as np
 import pandas as pd
 from random import random
@@ -9,12 +10,12 @@ def generate_ground_truth_matrix(dimensions, environment='random'):
     Generates a ground truth matrix.
 
     Parameters:
-        quantization_method:
-        distribution:
+        environment: the behavoral model that establishes the ground truth matrix. A list of predefined, supported
+        environments is available at https://github.com/berkeley-reclab/RecLab/blob/master/reclab/environments/registry.py.
         dimensions: a tuple containing the dimensions of the matrix.
 
     Returns:
-        a mxn matrix containing the ground truth for each pair of m users and n items.
+        a mxn matrix containing the (continuously distributed) ground truth for each pair of m users and n items.
     """
     m, n = dimensions
 
@@ -26,7 +27,7 @@ def generate_ground_truth_matrix(dimensions, environment='random'):
         return env._get_dense_ratings()
 
 
-def ground_truth_matrix_to_dataset(matrix, sample_prob=0.1, bias=False, shuffle=True):
+def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=None, noise=0.05):
     """
     Converts a ground truth matrix to a recommender dataset. First simulate the observations on the ground truth
     matrix, then convert them to a recommender dataset.
@@ -42,11 +43,26 @@ def ground_truth_matrix_to_dataset(matrix, sample_prob=0.1, bias=False, shuffle=
         Same as reclab.data_utils.read_dataset()
     """
     m, n = matrix.shape
+    matrix = np.random.shuffle(matrix)
 
-    if shuffle:
-        np.random.shuffle(matrix)
+    # Normalize the ground truth and add Gaussian noise
+    matrix = (matrix - matrix.min()) / (matrix.max() - matrix.min())
+    matrix = matrix + np.random.normal(0, noise, matrix.shape)
 
-    if not bias:
+    # Quantize the matrix 
+    if quantization == 'binary':
+        matrix[matrix <= 0.5] = 0
+        matrix[matrix > 0.5] = 1
+    elif quantization == 'onetofive':
+        matrix[matrix <= 0.2] = 1
+        matrix[matrix <= 0.4] = 2
+        matrix[matrix <= 0.6] = 3
+        matrix[matrix <= 0.8] = 4
+        matrix[matrix <= 1] = 5
+    else:
+        raise ValueError('Quantization scale not supported.')    
+    
+    if bias is None:
         ratings = {}
         for i in range(m):
             for j in range(n):
@@ -54,7 +70,7 @@ def ground_truth_matrix_to_dataset(matrix, sample_prob=0.1, bias=False, shuffle=
         users, items = generate_users_items(ratings, m, n)
         return users, items, ratings
 
-    else:
+    elif bias == 'popularity':
         # TODO: Introduce bias
         return
 
@@ -87,7 +103,8 @@ def sample(value, sample_prob=0.1):
 
 
 if __name__ == '__main__':
-    truth = generate_ground_truth_matrix((1000, 1000), environment='latent-static-v1')
+    truth = generate_ground_truth_matrix(
+        (1000, 1000), environment='latent-static-v1')
     print(truth)
     # users, items, ratings = ground_truth_matrix_to_dataset(truth)
     # print(users)
