@@ -2,6 +2,7 @@ from multiprocessing.sharedctypes import Value
 import numpy as np
 import pandas as pd
 from random import random
+from math import exp
 import reclab
 
 
@@ -27,14 +28,14 @@ def generate_ground_truth_matrix(dimensions, environment='random'):
         return env._get_dense_ratings()
 
 
-def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=None, noise=0.05):
+def ground_truth_matrix_to_dataset(R, quantization, sample_prob=0.1, bias=None, beta=1, noise=0.05):
     """
     Converts a ground truth matrix to a recommender dataset. First simulate the observations on the ground truth
     matrix, then convert them to a recommender dataset.
     Bias can be introduced in the dataset.
 
     Parameters:
-        matrix: a mxn matrix that contains the ground truth for each pair of m users and n items.
+        R: a mxn matrix that contains the ground truth for each pair of m users and n items.
         sample_prob: the probability of sampling a chosen pair of users and items.
         bias: the type of sampling bias.
         shuffle: whether to shuffle the dataset by users.
@@ -42,42 +43,72 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
     Returns:
         Same as reclab.data_utils.read_dataset()
     """
-    m, n = matrix.shape
-    matrix = np.random.shuffle(matrix)
+    m, n = R.shape
+    np.random.shuffle(R)
 
     # Normalize the ground truth and add Gaussian noise
-    matrix = (matrix - matrix.min()) / (matrix.max() - matrix.min())
-    matrix = matrix + np.random.normal(0, noise, matrix.shape)
+    R = (R - R.min()) / (R.max() - R.min())
+    R = R + np.random.normal(0, noise, R.shape)
 
-    # Quantize the matrix 
+    # Quantize the matrix
     if quantization == 'binary':
-        matrix[matrix <= 0.5] = 0
-        matrix[matrix > 0.5] = 1
+        R[R <= 0.5] = 0
+        R[R > 0.5] = 1
     elif quantization == 'onetofive':
-        matrix[matrix <= 0.2] = 1
-        matrix[matrix <= 0.4] = 2
-        matrix[matrix <= 0.6] = 3
-        matrix[matrix <= 0.8] = 4
-        matrix[matrix <= 1] = 5
+        R[R <= 0.2] = 1
+        R[R <= 0.4] = 2
+        R[R <= 0.6] = 3
+        R[R <= 0.8] = 4
+        R[R <= 1] = 5
     else:
-        raise ValueError('Quantization scale not supported.')    
-    
+        raise ValueError('Quantization scale not supported.')
+
+    print(f'Ground truth after normalization and quantization: {R}')
+
     if bias is None:
         ratings = {}
         for i in range(m):
             for j in range(n):
-                ratings[(i, j)] = sample(matrix[i, j], sample_prob)
+                ratings[(i, j)] = sample(R[i, j], sample_prob)
         users, items = generate_users_items(ratings, m, n)
         return users, items, ratings
 
     elif bias == 'popularity':
-        # TODO: Introduce bias
-        return
+        average_ratings = np.mean(R, axis=0)
+        softmax_result = softmax(average_ratings, beta)
+        # Scale mean to one
+        softmax_result /= softmax_result.mean()
+        P = np.tile(softmax_result, m)
+
+        for i in range(m):
+            for j in range(n):
+                ratings[(i, j)] = sample(R[i, j], P[i, j] * sample_prob)
+        users, items = generate_users_items(ratings, m, n)
+        return users, items, ratings
+
+    elif bias == 'active user':
+        average_ratings = np.mean(R, axis=1)
+        softmax_result = softmax(average_ratings, beta)
+        # Scale mean to one
+        softmax_result /= softmax_result.mean()
+        P = np.tile(softmax_result, (n, 1))
+
+        for i in range(m):
+            for j in range(n):
+                ratings[(i, j)] = sample(R[i, j], P[i, j] * sample_prob)
+        users, items = generate_users_items(ratings, m, n)
+        return users, items, ratings
+
+    elif bias == 'full underlying':
+        pass
+    
+    else:
+        raise ValueError('Bias method not supported.')    
 
 
 def generate_users_items(ratings, m, n):
     """
-    Helper function that takes in a dictionary of ratings and outputs two disctionarys of users and items.
+    Helper function that takes as input a dictionary of ratings and outputs two dictionaries of users and items.
     """
     users = {}
     items = {}
@@ -85,7 +116,6 @@ def generate_users_items(ratings, m, n):
         users[i] = [None] * n
     for i in range(n):
         items[i] = [None] * m
-
     for (user_id, item_id), rating in ratings.items():
         users[user_id][item_id] = rating
         items[item_id][user_id] = rating
@@ -102,11 +132,19 @@ def sample(value, sample_prob=0.1):
         return value
 
 
+def softmax(user, beta):
+    """
+    Helper function that returns the softmax of a user's ratings. beta is a prameter that controls the amount of bias.
+    """
+    exps = np.exp(beta * user)
+    return exps / np.sum(exps)
+
+
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
         (1000, 1000), environment='latent-static-v1')
     print(truth)
-    # users, items, ratings = ground_truth_matrix_to_dataset(truth)
+    users, items, ratings = ground_truth_matrix_to_dataset(truth, 'onetofive')
     # print(users)
     # print(items)
     # print(ratings)
