@@ -3,8 +3,8 @@ import pandas as pd
 from random import random
 import reclab
 
-# TODO: extract ground truth matrix from reclab
-def generate_ground_truth_matrix(dimensions, distribution='uniform', quantization_method='binary'):
+
+def generate_ground_truth_matrix(dimensions, environment='random'):
     """
     Generates a ground truth matrix.
 
@@ -18,9 +18,12 @@ def generate_ground_truth_matrix(dimensions, distribution='uniform', quantizatio
     """
     m, n = dimensions
 
-    if distribution == 'uniform':
-        if quantization_method == 'binary':
-            return np.random.randint(2, size=dimensions)
+    if environment == 'random':
+        return np.random.rand(dimensions)
+    else:
+        env = reclab.make(environment, num_users=m, num_items=n, noise=0)
+        env.reset()
+        return env._get_dense_ratings()
 
 
 def ground_truth_matrix_to_dataset(matrix, sample_prob=0.1, bias=False, shuffle=True):
@@ -84,9 +87,9 @@ def sample(value, sample_prob=0.1):
 
 
 if __name__ == '__main__':
-    truth = generate_ground_truth_matrix((10, 10))
+    truth = generate_ground_truth_matrix((1000, 1000), environment='latent-static-v1')
     print(truth)
-    users, items, ratings = ground_truth_matrix_to_dataset(truth)
-    print(users)
-    print(items)
-    print(ratings)
+    # users, items, ratings = ground_truth_matrix_to_dataset(truth)
+    # print(users)
+    # print(items)
+    # print(ratings)
