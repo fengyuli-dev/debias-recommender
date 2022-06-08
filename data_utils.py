@@ -5,6 +5,7 @@ from random import random
 from math import exp
 import reclab
 
+EPSILON = 1e-8
 
 def generate_ground_truth_matrix(dimensions, environment='random'):
     """
@@ -25,7 +26,7 @@ def generate_ground_truth_matrix(dimensions, environment='random'):
     else:
         env = reclab.make(environment, num_users=m, num_items=n, noise=0)
         env.reset()
-        return env._get_dense_ratings()
+        return np.array(env._get_dense_ratings())
 
 
 def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=None, beta=1, noise=0.05):
@@ -81,7 +82,9 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
         softmax_result = exps / np.sum(exps)
         # Scale mean to one
         softmax_result /= np.mean(softmax_result)
-        P = np.tile(softmax_result, m)
+        P = np.tile(softmax_result, (m, 1))
+        assert abs(P.mean()) - 1 < EPSILON
+        assert P.shape == matrix.shape
 
         ratings = {}
         for i in range(m):
@@ -96,7 +99,9 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
         softmax_result = exps / np.sum(exps)
         # Scale mean to one
         softmax_result /= np.mean(softmax_result)
-        P = np.tile(softmax_result, (n, 1))
+        P = np.tile(softmax_result.reshape(1, m), (n, 1))
+        assert abs(P.mean()) - 1 < EPSILON
+        assert P.shape == matrix.shape
 
         ratings = {}
         for i in range(m):
@@ -109,7 +114,7 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
         P = np.exp(matrix)
         P /= np.sum(P)
         P /= np.mean(P)
-        print(f'Mean: {P.mean()}')
+        assert abs(P.mean()) - 1 < EPSILON
     
         ratings = {}
         for i in range(m):
@@ -147,12 +152,7 @@ def sample(value, sample_prob=0.1):
     else:
         return value
 
-
 if __name__ == '__main__':
-    truth = generate_ground_truth_matrix(
-        (1000, 1000), environment='latent-static-v1')
-    # print(truth)
-    users, items, ratings = ground_truth_matrix_to_dataset(truth, 'onetofive', bias='full underlying')
-    # print(users)
-    # print(items)
-    # print(ratings)
+    truth = generate_ground_truth_matrix((1000, 1000), environment='latent-dynamic-v1')
+    assert truth.shape == (1000, 1000)
+    users, items, ratings = ground_truth_matrix_to_dataset(truth, quantization='onetofive', bias='active user')
