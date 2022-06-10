@@ -1,11 +1,11 @@
-from multiprocessing.sharedctypes import Value
 import numpy as np
-import pandas as pd
+from scipy.stats import pearsonr, spearmanr
 from random import random
 from math import exp
 import reclab
 
 EPSILON = 1e-8
+
 
 def generate_ground_truth_matrix(dimensions, environment='random'):
     """
@@ -124,7 +124,7 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
         P /= np.mean(P)
         P *= sample_prob
         assert abs(P.mean()) - sample_prob < EPSILON
-    
+
         ratings = {}
         for i in range(m):
             for j in range(n):
@@ -133,7 +133,7 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
         return users, items, ratings, P, R
 
     else:
-        raise ValueError('Bias method not supported.')    
+        raise ValueError('Bias method not supported.')
 
 
 def generate_users_items(ratings, m, n):
@@ -161,13 +161,28 @@ def sample(value, sample_prob=0.1):
     else:
         return value
 
-if __name__ == '__main__':
-    truth = generate_ground_truth_matrix((1000, 1000), environment='latent-dynamic-v1')
-    assert truth.shape == (1000, 1000)
-    users, items, ratings, P, R = ground_truth_matrix_to_dataset(truth, quantization='onetofive', bias='active user')
 
-    count = 0
-    for rating in ratings.values():
-        if rating is not None:
-            count += 1
-    print(count / (1000 * 1000))        
+def correlation(P, matrix, correlation='pearson'):
+    """
+    Helper function that computes the correlation between two matrices.
+    """
+    if correlation == 'pearson':
+        return pearsonr(P.flatten(), matrix.flatten())[0]
+    elif correlation == 'spearman':
+        return spearmanr(P.flatten(), matrix.flatten())[0]
+
+
+if __name__ == '__main__':
+    truth = generate_ground_truth_matrix(
+        (1000, 1000), environment='latent-dynamic-v1')
+    assert truth.shape == (1000, 1000)
+    users, items, ratings, P, R = ground_truth_matrix_to_dataset(
+        truth, quantization='onetofive', bias='popularity')
+
+    # count = 0
+    # for rating in ratings.values():
+    #     if rating is not None:
+    #         count += 1
+    # print(count / (1000 * 1000))
+
+    print(correlation(P, truth))
