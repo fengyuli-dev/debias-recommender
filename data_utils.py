@@ -1,9 +1,10 @@
-from multiprocessing.sharedctypes import Value
 import numpy as np
-import pandas as pd
+from scipy.stats import pearsonr, spearmanr
 from random import random
 from math import exp
 import reclab
+
+EPSILON = 1e-8
 
 
 def generate_ground_truth_matrix(dimensions, environment='random'):
@@ -25,7 +26,7 @@ def generate_ground_truth_matrix(dimensions, environment='random'):
     else:
         env = reclab.make(environment, num_users=m, num_items=n, noise=0)
         env.reset()
-        return env._get_dense_ratings()
+        return np.array(env._get_dense_ratings())
 
 
 def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=None, beta=1, noise=0.05):
@@ -35,13 +36,19 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
     Bias can be introduced in the dataset.
 
     Parameters:
-        R: a mxn matrix that contains the ground truth for each pair of m users and n items.
-        sample_prob: the probability of sampling a chosen pair of users and items.
+        matrix: a mxn matrix that contains the ground truth for each pair of m users and n items.
+        quantization: the way to quantize / discretize the ratings.
+        sample_prob: the expected probability of sampling a chosen pair of users and items.
         bias: the type of sampling bias.
-        shuffle: whether to shuffle the dataset by users.
+        beta: hyperparameter that controls the degress of the bias.
+        noise: hyperparameter that controls the degree of noise.
 
     Returns:
-        Same as reclab.data_utils.read_dataset()
+        users: a dictionary whose ith entry is a list of observed ratings for the ith user.
+        itmes: a dictionary whose ith entry is a list of observed ratings for the ith item.
+        ratings: a dictionary whose entry with key (i, j) is the observed rating for user i on item j.
+        P: P[i, j] is the probability of observing rating i on item j.
+        R: R is a quantized version of the input matrix. Noise is also added.
     """
     m, n = matrix.shape
     np.random.shuffle(matrix)
@@ -73,53 +80,60 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
             for j in range(n):
                 ratings[(i, j)] = sample(R[i, j], sample_prob)
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings
+        return users, items, ratings, P, R
 
     elif bias == 'popularity':
         average_ratings = np.mean(matrix, axis=0)
         exps = np.exp(beta * average_ratings)
         softmax_result = exps / np.sum(exps)
-        # Scale mean to one
+        # Scale mean to sample_prob
         softmax_result /= np.mean(softmax_result)
-        P = np.tile(softmax_result, m)
+        softmax_result *= sample_prob
+        P = np.tile(softmax_result, (m, 1))
+        assert abs(P.mean()) - sample_prob < EPSILON
+        assert P.shape == matrix.shape
 
         ratings = {}
         for i in range(m):
             for j in range(n):
-                ratings[(i, j)] = sample(R[i, j], P[i, j] * sample_prob)
+                ratings[(i, j)] = sample(R[i, j], P[i, j])
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings
+        return users, items, ratings, P, R
 
     elif bias == 'active user':
         average_ratings = np.mean(matrix, axis=1)
         exps = np.exp(beta * average_ratings)
         softmax_result = exps / np.sum(exps)
-        # Scale mean to one
+        # Scale mean to sample_prob
         softmax_result /= np.mean(softmax_result)
-        P = np.tile(softmax_result, (n, 1))
+        softmax_result *= sample_prob
+        P = np.tile(softmax_result.reshape(1, m), (n, 1))
+        assert abs(P.mean()) - sample_prob < EPSILON
+        assert P.shape == matrix.shape
 
         ratings = {}
         for i in range(m):
             for j in range(n):
-                ratings[(i, j)] = sample(R[i, j], P[i, j] * sample_prob)
+                ratings[(i, j)] = sample(R[i, j], P[i, j])
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings
+        return users, items, ratings, P, R
 
     elif bias == 'full underlying':
-        P = np.exp(matrix)
+        P = np.exp(beta * matrix)
         P /= np.sum(P)
         P /= np.mean(P)
-        print(f'Mean: {P.mean()}')
-    
+        P *= sample_prob
+        assert abs(P.mean()) - sample_prob < EPSILON
+
         ratings = {}
         for i in range(m):
             for j in range(n):
-                ratings[(i, j)] = sample(R[i, j], P[i, j] * sample_prob)
+                ratings[(i, j)] = sample(R[i, j], P[i, j])
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings
+        return users, items, ratings, P, R
 
     else:
-        raise ValueError('Bias method not supported.')    
+        raise ValueError('Bias method not supported.')
 
 
 def generate_users_items(ratings, m, n):
@@ -148,11 +162,27 @@ def sample(value, sample_prob=0.1):
         return value
 
 
+def correlation(P, matrix, correlation='pearson'):
+    """
+    Helper function that computes the correlation between two matrices.
+    """
+    if correlation == 'pearson':
+        return pearsonr(P.flatten(), matrix.flatten())[0]
+    elif correlation == 'spearman':
+        return spearmanr(P.flatten(), matrix.flatten())[0]
+
+
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
-        (1000, 1000), environment='latent-static-v1')
-    # print(truth)
-    users, items, ratings = ground_truth_matrix_to_dataset(truth, 'onetofive', bias='full underlying')
-    # print(users)
-    # print(items)
-    # print(ratings)
+        (1000, 1000), environment='latent-dynamic-v1')
+    assert truth.shape == (1000, 1000)
+    users, items, ratings, P, R = ground_truth_matrix_to_dataset(
+        truth, quantization='onetofive', bias='popularity')
+
+    # count = 0
+    # for rating in ratings.values():
+    #     if rating is not None:
+    #         count += 1
+    # print(count / (1000 * 1000))
+
+    print(correlation(P, truth))
