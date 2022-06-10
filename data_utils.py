@@ -36,13 +36,19 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
     Bias can be introduced in the dataset.
 
     Parameters:
-        R: a mxn matrix that contains the ground truth for each pair of m users and n items.
-        sample_prob: the probability of sampling a chosen pair of users and items.
+        matrix: a mxn matrix that contains the ground truth for each pair of m users and n items.
+        quantization: the way to quantize / discretize the ratings.
+        sample_prob: the expected probability of sampling a chosen pair of users and items.
         bias: the type of sampling bias.
-        shuffle: whether to shuffle the dataset by users.
+        beta: hyperparameter that controls the degress of the bias.
+        noise: hyperparameter that controls the degree of noise.
 
     Returns:
-        Same as reclab.data_utils.read_dataset()
+        users: a dictionary whose ith entry is a list of observed ratings for the ith user.
+        itmes: a dictionary whose ith entry is a list of observed ratings for the ith item.
+        ratings: a dictionary whose entry with key (i, j) is the observed rating for user i on item j.
+        P: P[i, j] is the probability of observing rating i on item j.
+        R: R is a quantized version of the input matrix. Noise is also added.
     """
     m, n = matrix.shape
     np.random.shuffle(matrix)
@@ -74,54 +80,57 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
             for j in range(n):
                 ratings[(i, j)] = sample(R[i, j], sample_prob)
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings
+        return users, items, ratings, P, R
 
     elif bias == 'popularity':
         average_ratings = np.mean(matrix, axis=0)
         exps = np.exp(beta * average_ratings)
         softmax_result = exps / np.sum(exps)
-        # Scale mean to one
+        # Scale mean to sample_prob
         softmax_result /= np.mean(softmax_result)
+        softmax_result *= sample_prob
         P = np.tile(softmax_result, (m, 1))
-        assert abs(P.mean()) - 1 < EPSILON
+        assert abs(P.mean()) - sample_prob < EPSILON
         assert P.shape == matrix.shape
 
         ratings = {}
         for i in range(m):
             for j in range(n):
-                ratings[(i, j)] = sample(R[i, j], P[i, j] * sample_prob)
+                ratings[(i, j)] = sample(R[i, j], P[i, j])
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings
+        return users, items, ratings, P, R
 
     elif bias == 'active user':
         average_ratings = np.mean(matrix, axis=1)
         exps = np.exp(beta * average_ratings)
         softmax_result = exps / np.sum(exps)
-        # Scale mean to one
+        # Scale mean to sample_prob
         softmax_result /= np.mean(softmax_result)
+        softmax_result *= sample_prob
         P = np.tile(softmax_result.reshape(1, m), (n, 1))
-        assert abs(P.mean()) - 1 < EPSILON
+        assert abs(P.mean()) - sample_prob < EPSILON
         assert P.shape == matrix.shape
 
         ratings = {}
         for i in range(m):
             for j in range(n):
-                ratings[(i, j)] = sample(R[i, j], P[i, j] * sample_prob)
+                ratings[(i, j)] = sample(R[i, j], P[i, j])
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings
+        return users, items, ratings, P, R
 
     elif bias == 'full underlying':
         P = np.exp(beta * matrix)
         P /= np.sum(P)
         P /= np.mean(P)
-        assert abs(P.mean()) - 1 < EPSILON
+        P *= sample_prob
+        assert abs(P.mean()) - sample_prob < EPSILON
     
         ratings = {}
         for i in range(m):
             for j in range(n):
-                ratings[(i, j)] = sample(R[i, j], P[i, j] * sample_prob)
+                ratings[(i, j)] = sample(R[i, j], P[i, j])
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings
+        return users, items, ratings, P, R
 
     else:
         raise ValueError('Bias method not supported.')    
@@ -155,7 +164,7 @@ def sample(value, sample_prob=0.1):
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix((1000, 1000), environment='latent-dynamic-v1')
     assert truth.shape == (1000, 1000)
-    users, items, ratings = ground_truth_matrix_to_dataset(truth, quantization='onetofive', bias='active user')
+    users, items, ratings, P, R = ground_truth_matrix_to_dataset(truth, quantization='onetofive', bias='active user')
 
     count = 0
     for rating in ratings.values():
