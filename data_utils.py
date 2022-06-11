@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import pearsonr, spearmanr
+from scipy.stats import pearsonr, spearmanr, kendalltau
 from random import random
 from math import exp
 import reclab
@@ -71,8 +71,6 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
         R[R <= 1] = 5
     else:
         raise ValueError('Quantization scale not supported.')
-
-    print(f'Ground truth after normalization and quantization: {R}')
 
     if bias is None:
         ratings = {}
@@ -170,19 +168,14 @@ def correlation(P, matrix, correlation='pearson'):
         return pearsonr(P.flatten(), matrix.flatten())[0]
     elif correlation == 'spearman':
         return spearmanr(P.flatten(), matrix.flatten())[0]
+    elif correlation == 'kendalltau':
+        return kendalltau(P.flatten(), matrix.flatten())[0]
 
 
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
         (1000, 1000), environment='latent-dynamic-v1')
-    assert truth.shape == (1000, 1000)
     users, items, ratings, P, R = ground_truth_matrix_to_dataset(
         truth, quantization='onetofive', bias='popularity')
 
-    # count = 0
-    # for rating in ratings.values():
-    #     if rating is not None:
-    #         count += 1
-    # print(count / (1000 * 1000))
-
-    print(correlation(P, truth))
+    print(correlation(P, truth, correlation='spearman'))
