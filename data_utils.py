@@ -23,6 +23,10 @@ def generate_ground_truth_matrix(dimensions, environment='random'):
 
     if environment == 'random':
         return np.random.rand(dimensions)
+    elif environment == 'ml-100k-v1':
+        env = reclab.make(environment)
+        env.reset()
+        return np.array(env._get_dense_ratings())
     else:
         env = reclab.make(environment, num_users=m, num_items=n, noise=0)
         env.reset()
