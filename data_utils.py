@@ -72,8 +72,6 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
     else:
         raise ValueError('Quantization scale not supported.')
 
-    print(f'Ground truth after normalization and quantization: {R}')
-
     if bias is None:
         ratings = {}
         for i in range(m):
@@ -175,14 +173,7 @@ def correlation(P, matrix, correlation='pearson'):
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
         (1000, 1000), environment='latent-dynamic-v1')
-    assert truth.shape == (1000, 1000)
     users, items, ratings, P, R = ground_truth_matrix_to_dataset(
         truth, quantization='onetofive', bias='popularity')
 
-    # count = 0
-    # for rating in ratings.values():
-    #     if rating is not None:
-    #         count += 1
-    # print(count / (1000 * 1000))
-
-    print(correlation(P, truth))
+    print(correlation(P, truth, correlation='spearman'))
