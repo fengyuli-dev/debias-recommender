@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import pearsonr, spearmanr
+from scipy.stats import pearsonr, spearmanr, kendalltau
 from random import random
 from math import exp
 import reclab
@@ -168,6 +168,8 @@ def correlation(P, matrix, correlation='pearson'):
         return pearsonr(P.flatten(), matrix.flatten())[0]
     elif correlation == 'spearman':
         return spearmanr(P.flatten(), matrix.flatten())[0]
+    elif correlation == 'kendalltau':
+        return kendalltau(P.flatten(), matrix.flatten())[0]
 
 
 if __name__ == '__main__':
