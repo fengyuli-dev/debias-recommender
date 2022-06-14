@@ -36,6 +36,7 @@
 \def\CC{\mathbb{C}}
 \def\NN{\mathbb{N}}
 \def\OO{\mathbb{O}}
+\def\HH{\mathbb{H}}
 \def\Ll{\mathcal{L}}
 \def\Mm{\mathcal{M}}
 \DeclareMathOperator*{\argmax}{arg\,max}
@@ -55,5 +56,20 @@
 \section{Introduction}
 
 \section{Draft Area}
+ (Consider using 2-dimensional Gaussian?)\\
+Assume the (flattened) ground truth ratings is a standard Gaussian with differential entropy
+\begin{align*} \HH(R\sim N(0, 1)) & = -\EE[\log R]                    \\ & = -\int_{-\infty}^\infty \frac{1}{\sqrt{2\pi}}e^{-\frac{x^2}{2}} \log \frac{1}{\sqrt{2\pi}}e^{-\frac{x^2}{2}} \, dx \\
+                                  & = \frac{1}{2}\log 2\pi e          \\
+                                  & = 2.05
+\end{align*}
+We can show that quantization (discretization) loses information. Consider
+a simple binary quantization that splits the ratings around the mean. Denote the quantized r.v. as $Q_1$.
+\[ \HH(Q_1) = -2 \cdot \frac{1}{2} \log \frac{1}{2} = 1 \]
+Consider another quantized r.v. $Q_2$ that divides the distribution four-fold based on the four quantiles.
+\[ \HH(Q_2) = -4 \cdot \frac{1}{4} \log \frac{1}{4} = 2 \]
+We can see that different quantization schemes loses different amount of information.
+\[ \HH(R) > \HH(Q_2) > \HH(Q_1) \]
 
+Next: discussion
 \end{document}
+

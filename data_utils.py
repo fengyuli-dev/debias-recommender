@@ -178,8 +178,8 @@ def correlation(P, matrix, correlation='pearson'):
 
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
-        (1000, 1000), environment='latent-dynamic-v1')
+        (1000, 1000), environment='latent-static-v1')
     users, items, ratings, P, R = ground_truth_matrix_to_dataset(
         truth, quantization='onetofive', bias='popularity')
 
-    print(correlation(P, truth, correlation='spearman'))
+    print(correlation(P, truth, correlation='kerdalltau'))
