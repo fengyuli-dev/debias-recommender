@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import pearsonr, spearmanr, kendalltau
+from scipy.stats import pearsonr, spearmanr
 from random import random
 from math import exp
 import reclab
@@ -54,6 +54,7 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
         P: P[i, j] is the probability of observing rating i on item j.
         R: R is a quantized version of the input matrix. Noise is also added.
     """
+
     m, n = matrix.shape
     np.random.shuffle(matrix)
 
@@ -172,14 +173,12 @@ def correlation(P, matrix, correlation='pearson'):
         return pearsonr(P.flatten(), matrix.flatten())[0]
     elif correlation == 'spearman':
         return spearmanr(P.flatten(), matrix.flatten())[0]
-    elif correlation == 'kendalltau':
-        return kendalltau(P.flatten(), matrix.flatten())[0]
 
 
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
-        (1000, 1000), environment='latent-static-v1')
+        (1000, 1000), environment='ml-100k-v1')
     users, items, ratings, P, R = ground_truth_matrix_to_dataset(
         truth, quantization='onetofive', bias='popularity')
 
-    print(correlation(P, truth, correlation='kerdalltau'))
+    print(correlation(P, truth, correlation='spearman'))
