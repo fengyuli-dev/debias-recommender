@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 from random import random
 from math import exp
@@ -174,6 +175,19 @@ def correlation(P, matrix, correlation='pearson'):
     elif correlation == 'spearman':
         return spearmanr(P.flatten(), matrix.flatten())[0]
 
+
+def to_dataframe(ratings):
+    ratings_dict = {
+        'itemID': [],
+        'userID': [],
+        'rating': []
+    }
+    for key, value in ratings.items():
+        userID, itemID = key
+        ratings_dict['itemID'].append(itemID)
+        ratings_dict['userID'].append(userID)
+        ratings_dict['rating'].append(value)
+    return pd.DataFrame(ratings_dict)
 
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
