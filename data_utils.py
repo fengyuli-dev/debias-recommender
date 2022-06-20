@@ -182,17 +182,18 @@ def to_dataframe(ratings):
         'userID': [],
         'rating': []
     }
-    for key, value in ratings.items():
+    for key, value in ratings.itsems():
         userID, itemID = key
         ratings_dict['itemID'].append(itemID)
         ratings_dict['userID'].append(userID)
         ratings_dict['rating'].append(value)
     return pd.DataFrame(ratings_dict)
 
+
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
         (1000, 1000), environment='ml-100k-v1')
     users, items, ratings, P, R = ground_truth_matrix_to_dataset(
         truth, quantization='onetofive', bias='popularity')
-
-    print(correlation(P, truth, correlation='spearman'))
+    df = to_dataframe(ratings)
+    print(df.head())

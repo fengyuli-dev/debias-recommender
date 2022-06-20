@@ -59,7 +59,7 @@
  (Consider using 2-dimensional Gaussian?)\\
 Assume the (flattened) ground truth ratings is a standard Gaussian with differential entropy
 \begin{align*} \HH(R\sim N(0, 1)) & = -\int_{-\infty}^\infty \frac{1}{\sqrt{2\pi}}e^{-\frac{x^2}{2}} \log \frac{1}{\sqrt{2\pi}}e^{-\frac{x^2}{2}} \, dx \\
-                                  & = \frac{1}{2}\log 2\pi e          \\
+                                  & = \frac{1}{2}\log 2\pi e                                                                                            \\
                                   & = 2.05
 \end{align*}
 We can show that quantization (discretization) loses information. Consider
@@ -69,7 +69,12 @@ Consider another quantized r.v. $Q_2$ that divides the distribution four-fold ba
 \[ \HH(Q_2) = -4 \cdot \frac{1}{4} \log \frac{1}{4} = 2 \]
 We can see that different quantization schemes loses different amount of information.
 \[ \HH(R) > \HH(Q_2) > \HH(Q_1) \]
+Next, we can prove that selection bias causes information loss. Assuming the selection bias causes ratings to have unequal probability to be sampled, and higher ratings are more likely to be sampled. The distribution of the observed ratings would then be right-skewed. We prove that, in the binary case, this reduces the information loss. Let $p$ be the probability that the sampled rating is positive.
+\[\HH = p\log p + (1-p) \log (1-p) \]
+\[ \frac{d\HH}{dp} = 1 + \log p + \frac{1-p}{p-1} - \log(1-p) = 0 \]
+which is optimized when $p = 0.5$. This result extends to all $n$-quantizations (can be proved using Lagrange multipliers.) See \url{http://pillowlab.princeton.edu/teaching/statneuro2018/slides/notes08_infotheory.pdf}.
 
-Next: discussion
+
+
 \end{document}
 
