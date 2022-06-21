@@ -182,7 +182,7 @@ def to_dataframe(ratings):
         'userID': [],
         'rating': []
     }
-    for key, value in ratings.itsems():
+    for key, value in ratings.items():
         userID, itemID = key
         ratings_dict['itemID'].append(itemID)
         ratings_dict['userID'].append(userID)
