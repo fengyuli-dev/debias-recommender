@@ -166,14 +166,14 @@ def sample(value, sample_prob=0.1):
         return value
 
 
-def correlation(P, matrix, correlation='pearson'):
-    """
-    Helper function that computes the correlation between two matrices.
-    """
-    if correlation == 'pearson':
-        return pearsonr(P.flatten(), matrix.flatten())[0]
-    elif correlation == 'spearman':
-        return spearmanr(P.flatten(), matrix.flatten())[0]
+# def correlation(P, matrix, correlation='pearson'):
+#     """
+#     Helper function that computes the correlation between two matrices.
+#     """
+#     if correlation == 'pearson':
+#         return pearsonr(P.flatten(), matrix.flatten())[0]
+#     elif correlation == 'spearman':
+#         return spearmanr(P.flatten(), matrix.flatten())[0]
 
 
 def to_dataframe(ratings):
@@ -183,11 +183,26 @@ def to_dataframe(ratings):
         'rating': []
     }
     for key, value in ratings.items():
-        userID, itemID = key
-        ratings_dict['itemID'].append(itemID)
-        ratings_dict['userID'].append(userID)
-        ratings_dict['rating'].append(value)
+        if value is not None:
+            userID, itemID = key
+            ratings_dict['itemID'].append(itemID)
+            ratings_dict['userID'].append(userID)
+            ratings_dict['rating'].append(value)
     return pd.DataFrame(ratings_dict)
+
+
+def generate_test_dataframe(R):
+    test_dict = {'itemID': [],
+        'userID': [],
+        'rating': []}
+    m, n = R.shape
+    for i in range(m):
+        for j in range(n):
+            if random() > 0.99:
+                test_dict['itemID'].append(j)
+                test_dict['userID'].append(i)
+                test_dict['rating'].append(R[i][j])
+    return pd.DataFrame(test_dict)
 
 
 if __name__ == '__main__':
