@@ -62,19 +62,54 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
     R = matrix.copy()
 
     # Normalize the ground truth and add Gaussian noise
-    R = (R - R.min()) / (R.max() - R.min())
-    R = R + np.random.normal(0, noise, R.shape)
+    R_no_noise = (R - R.min()) / (R.max() - R.min())
+    R = R_no_noise + np.random.normal(0, noise, R.shape)
 
     # Quantize the matrix
     if quantization == 'binary':
         R[R <= 0.5] = 0
+        R_no_noise[R_no_noise <= 0.5] = 0
         R[R > 0.5] = 1
+        R_no_noise[R_no_noise > 0.5] = 1
     elif quantization == 'onetofive':
         R[R <= 0.2] = 1
+        R_no_noise[R_no_noise <= 0.2] = 1
         R[R <= 0.4] = 2
+        R_no_noise[R_no_noise <= 0.4] = 2
         R[R <= 0.6] = 3
+        R_no_noise[R_no_noise <= 0.6] = 3
         R[R <= 0.8] = 4
+        R_no_noise[R_no_noise <= 0.8] = 4
         R[R <= 1] = 5
+        R_no_noise[R_no_noise <= 1] = 5
+    elif quantization == 'onetothree':
+        R[R <= 0.33] = 1
+        R_no_noise[R_no_noise <= 0.33] = 1
+        R[R <= 0.66] = 2
+        R_no_noise[R_no_noise <= 0.66] = 2
+        R[R <= 1] = 3
+        R_no_noise[R_no_noise <= 1] = 3  
+    elif quantization == 'onetoten':
+        R[R <= 0.1] = 1
+        R_no_noise[R_no_noise <= 0.1] = 1
+        R[R <= 0.2] = 2
+        R_no_noise[R_no_noise <= 0.2] = 2
+        R[R <= 0.3] = 3
+        R_no_noise[R_no_noise <= 0.3] = 3
+        R[R <= 0.4] = 4
+        R_no_noise[R_no_noise <= 0.4] = 4
+        R[R <= 0.5] = 5
+        R_no_noise[R_no_noise <= 0.5] = 5
+        R[R <= 0.6] = 6
+        R_no_noise[R_no_noise <= 0.6] = 6
+        R[R <= 0.7] = 7
+        R_no_noise[R_no_noise <= 0.7] = 7
+        R[R <= 0.8] = 8
+        R_no_noise[R_no_noise <= 0.8] = 8
+        R[R <= 0.9] = 9
+        R_no_noise[R_no_noise <= 0.9] = 9
+        R[R <= 1] = 10
+        R_no_noise[R_no_noise <= 1] = 10      
     else:
         raise ValueError('Quantization scale not supported.')
 
@@ -134,7 +169,7 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
             for j in range(n):
                 ratings[(i, j)] = sample(R[i, j], P[i, j])
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings, P, R
+        return users, items, ratings, P, R, R_no_noise
 
     else:
         raise ValueError('Bias method not supported.')
