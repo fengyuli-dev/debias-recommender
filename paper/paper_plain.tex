@@ -1,0 +1,112 @@
+% My template
+\documentclass[12pt, letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[amsthm]{ntheorem}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{url}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+\setlist[enumerate]{topsep=0pt}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{definition}\newtheorem*{definition}{Definition}
+\theoremstyle{definition}\newtheorem*{example}{Example}
+\theoremstyle{definition}\newtheorem*{remark}{Remark}
+\newcommand{\vect}[1]{\boldsymbol{#1}}
+\newcommand{\mb}[1]{\mathbf{#1}}
+\def\RR{\mathbb{R}}
+\def\ZZ{\mathbb{Z}}
+\def\EE{\mathbb{E}}
+\def\PP{\mathbb{P}}
+\def\QQ{\mathbb{Q}}
+\def\II{\mathbb{I}}
+\def\CC{\mathbb{C}}
+\def\NN{\mathbb{N}}
+\def\OO{\mathbb{O}}
+\def\HH{\mathbb{H}}
+\def\Ll{\mathcal{L}}
+\def\Mm{\mathcal{M}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{\vspace{-2.0cm}Title }
+\author{Fengyu Li, Sarah Dean}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\section{Introduction}
+Selection bias is one of the most prevalent source of biases in a dataset for recommender systems. Selection bias happens when there is a pattern in the items that a user rates, either implicitly or explicitly. For example, in a recommender system for movies, users might only watch and rate the movies that are attractive to them in the first place. Selection bias is particularly relevant to recommender systems because when the system actively recommends items that the users like, it is creating bias by preventing users from accessing uncovered items. Selection bias introduces a Missing Not At Random (MNAR) condition to the observed dataset by conditioning it on the predictions of the recommender system. Tackling the selection bias in a recommender dataset has been a constant challenge in designing recommender algorithms
+
+Quantization is a practical way to categorize an input from a continuous distribution to a discrete set of bins. We assume the ground truth of a user's rating is a continuous distribution over items because of the inherent impossibility of numerically expressing the feeling of enjoyment and excitement. We treat a recommender dataset as a noised quantization of the ground truth. In other words, users convert their feelings into one of the discrete choices when they rate an item. Recommender datasets are quantized into different degrees. For example, a typical movie rating dataset uses a 5-quantization. A tinder like/dislike dataset uses a 2-quantization.
+
+We hypothesize that quantization and the effect of selection bias on the recommender system is positively correlated: the more quantized the dataset is (the fewer bins there are), the more severe the selection bias becomes in terms of the recommender system's performance. Therefore, a good-performing recommender system should prioritize training data that is less quantized. In reality, however, less quantized data might only represent a small subset of all the data one is capable of collecting. This is because less quantized data is typically explicit while more quantized data is typically implicit. That is to say, less quantized data would require a user explicitly rating an item, while more quantized data would be more easily gathered by observing the users' behaviors. For example, by observing the movie a user spontaneously chooses to see or if a user watches a movie's trailer to the end, we can easily create a 1-quantized or 2-quantized dataset, correspondingly, without the user paying any effort. In this paper, we propose a novel framework that utilizes these data. Our framework specifically exploits the fact that more quantized data is more susceptible to selection bias and treats it as an advantage that helps less quantized dataset better overcome the damage caused by selection bias.
+
+The main contribution of this work is three-fold:
+\begin{enumerate}
+    \item We design experiments under a simulated environment and shows that a more quantized dataset is more susceptible to selection bias (and thus the MNAR condition.)
+    \item We approach the above empirical results from a theoretical lens and explains the complex relationship between quantization, selection bias, and a recommender's performance using tools from information theory.
+    \item We propose a cross-dataset learning framework that empowers existing recommender algorithms to make use of the more quantized, implicit data. EXPLAIN MORE HERE
+\end{enumerate}
+
+Our hypothesis and theoretical results are verified through a series of empirical evaluation in a simulated environment where users' behaviors are carefully modeled. We show that our learning framework is significantly better than baseline recommender systems that neglects selection bias. We also show that our methods are substantially better than its single-dataset counterpart. EXPLAIN MORE HERE
+
+\section{Related Work}
+
+\subsection{Recommender Systems Against Selection Bias}
+
+\subsection{Quantization}
+
+\section{Theoretical Analysis}
+
+\section{Cross-Dataset Learning Framework}
+
+\section{Experiment}
+We designed experiments under simulated environments that verify the results introduced above. We first verify that more quantized dataset is more susceptible to selection bias and MNAR. We then runs our learning framework and compares it with multiple baselines.
+
+\subsection{Experiment Setup}
+
+\subsection{Controlling Bias}
+
+\subsection{Results}
+
+\section{Conclusion}
+
+\section{Draft Area}
+ (Consider using 2-dimensional Gaussian?)\\
+Assume the (flattened) ground truth ratings is a standard Gaussian with differential entropy
+\begin{align*} \HH(R\sim N(0, 1)) & = -\int_{-\infty}^\infty \frac{1}{\sqrt{2\pi}}e^{-\frac{x^2}{2}} \log \frac{1}{\sqrt{2\pi}}e^{-\frac{x^2}{2}} \, dx \\
+                                  & = \frac{1}{2}\log 2\pi e                                                                                            \\
+                                  & = 2.05
+\end{align*}
+We can show that quantization (discretization) loses information. Consider
+a simple binary quantization that splits the ratings around the mean. Denote the quantized r.v. as $Q_1$.
+\[ \HH(Q_1) = -2 \cdot \frac{1}{2} \log \frac{1}{2} = 1 \]
+Consider another quantized r.v. $Q_2$ that divides the distribution four-fold based on the four quantiles.
+\[ \HH(Q_2) = -4 \cdot \frac{1}{4} \log \frac{1}{4} = 2 \]
+We can see that different quantization schemes loses different amount of information.
+\[ \HH(R) > \HH(Q_2) > \HH(Q_1) \]
+Next, we can prove that selection bias causes information loss. Assuming the selection bias causes ratings to have unequal probability to be sampled, and higher ratings are more likely to be sampled. The distribution of the observed ratings would then be right-skewed. We prove that, in the binary case, this reduces the information loss. Let $p$ be the probability that the sampled rating is positive.
+\[\HH = p\log p + (1-p) \log (1-p) \]
+\[ \frac{d\HH}{dp} = 1 + \log p + \frac{1-p}{p-1} - \log(1-p) = 0 \]
+which is optimized when $p = 0.5$. This result extends to all $n$-quantizations (can be proved using Lagrange multipliers.) See \url{http://pillowlab.princeton.edu/teaching/statneuro2018/slides/notes08_infotheory.pdf}.
+
+
+
+\end{document}
+
