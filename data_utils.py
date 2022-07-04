@@ -64,62 +64,58 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
     # Normalize the ground truth and add Gaussian noise
     R_no_noise = (R - R.min()) / (R.max() - R.min())
     R = R_no_noise + np.random.normal(0, noise, R.shape)
+    R[R > 1] = 1
+    R[R <= 0] = 1e-7
+    R_no_noise[R_no_noise <= 0] = 1e-7
 
     # Quantize the matrix
     if quantization == 'binary':
-        R[R <= 0.5] = 0
-        R_no_noise[R_no_noise <= 0.5] = 0
-        R[R > 0.5] = 1
-        R_no_noise[R_no_noise > 0.5] = 1
+        bins = np.linspace(0, 1, 3)
+        indexes = np.digitize(R, bins)
+        indexes_no_noise = np.digitize(R_no_noise, bins, right=True)
+        bins = np.append(bins, 1)
+        for i in range(m):
+            for j in range(n):
+                R[i][j] = bins[indexes[i][j]]
+                R_no_noise[i][j] = bins[indexes_no_noise[i][j]]
     elif quantization == 'onetofive':
-        R[R <= 0.2] = 1
-        R_no_noise[R_no_noise <= 0.2] = 1
-        R[R <= 0.4] = 2
-        R_no_noise[R_no_noise <= 0.4] = 2
-        R[R <= 0.6] = 3
-        R_no_noise[R_no_noise <= 0.6] = 3
-        R[R <= 0.8] = 4
-        R_no_noise[R_no_noise <= 0.8] = 4
-        R[R <= 1] = 5
-        R_no_noise[R_no_noise <= 1] = 5
+        bins = np.linspace(0, 1, 6)
+        indexes = np.digitize(R, bins)
+        indexes_no_noise = np.digitize(R_no_noise, bins, right=True)
+        bins = np.append(bins, 1)
+        for i in range(m):
+            for j in range(n):
+                R[i][j] = bins[indexes[i][j]]
+                R_no_noise[i][j] = bins[indexes_no_noise[i][j]]
     elif quantization == 'onetothree':
-        R[R <= 0.33] = 1
-        R_no_noise[R_no_noise <= 0.33] = 1
-        R[R <= 0.66] = 2
-        R_no_noise[R_no_noise <= 0.66] = 2
-        R[R <= 1] = 3
-        R_no_noise[R_no_noise <= 1] = 3  
+        bins = np.linspace(0, 1, 4)
+        indexes = np.digitize(R, bins)
+        indexes_no_noise = np.digitize(R_no_noise, bins, right=True)
+        bins = np.append(bins, 1)
+        for i in range(m):
+            for j in range(n):
+                R[i][j] = bins[indexes[i][j]]
+                R_no_noise[i][j] = bins[indexes_no_noise[i][j]]
     elif quantization == 'onetoten':
-        R[R <= 0.1] = 1
-        R_no_noise[R_no_noise <= 0.1] = 1
-        R[R <= 0.2] = 2
-        R_no_noise[R_no_noise <= 0.2] = 2
-        R[R <= 0.3] = 3
-        R_no_noise[R_no_noise <= 0.3] = 3
-        R[R <= 0.4] = 4
-        R_no_noise[R_no_noise <= 0.4] = 4
-        R[R <= 0.5] = 5
-        R_no_noise[R_no_noise <= 0.5] = 5
-        R[R <= 0.6] = 6
-        R_no_noise[R_no_noise <= 0.6] = 6
-        R[R <= 0.7] = 7
-        R_no_noise[R_no_noise <= 0.7] = 7
-        R[R <= 0.8] = 8
-        R_no_noise[R_no_noise <= 0.8] = 8
-        R[R <= 0.9] = 9
-        R_no_noise[R_no_noise <= 0.9] = 9
-        R[R <= 1] = 10
-        R_no_noise[R_no_noise <= 1] = 10      
+        bins = np.linspace(0, 1, 11)
+        indexes = np.digitize(R, bins)
+        indexes_no_noise = np.digitize(R_no_noise, bins, right=True)
+        bins = np.append(bins, 1)
+        for i in range(m):
+            for j in range(n):
+                R[i][j] = bins[indexes[i][j]]
+                R_no_noise[i][j] = bins[indexes_no_noise[i][j]]
     else:
         raise ValueError('Quantization scale not supported.')
 
-    if bias is None:
+    if bias is None or beta == 0:
         ratings = {}
         for i in range(m):
             for j in range(n):
                 ratings[(i, j)] = sample(R[i, j], sample_prob)
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings, P, R
+        P = np.ones(matrix.shape) * sample_prob
+        return users, items, ratings, P, R, R_no_noise
 
     elif bias == 'popularity':
         average_ratings = np.mean(matrix, axis=0)
@@ -137,7 +133,7 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
             for j in range(n):
                 ratings[(i, j)] = sample(R[i, j], P[i, j])
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings, P, R
+        return users, items, ratings, P, R, R_no_noise
 
     elif bias == 'active user':
         average_ratings = np.mean(matrix, axis=1)
@@ -155,7 +151,7 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
             for j in range(n):
                 ratings[(i, j)] = sample(R[i, j], P[i, j])
         users, items = generate_users_items(ratings, m, n)
-        return users, items, ratings, P, R
+        return users, items, ratings, P, R, R_no_noise
 
     elif bias == 'full underlying':
         P = np.exp(beta * matrix)
@@ -228,8 +224,8 @@ def to_dataframe(ratings):
 
 def generate_test_dataframe(R):
     test_dict = {'itemID': [],
-        'userID': [],
-        'rating': []}
+                 'userID': [],
+                 'rating': []}
     m, n = R.shape
     for i in range(m):
         for j in range(n):
