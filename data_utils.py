@@ -239,7 +239,8 @@ def generate_test_dataframe(R):
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
         (1000, 1000), environment='ml-100k-v1')
-    users, items, ratings, P, R = ground_truth_matrix_to_dataset(
+    users, items, ratings, P, R, R_no_noise = ground_truth_matrix_to_dataset(
         truth, quantization='onetofive', bias='popularity')
     df = to_dataframe(ratings)
     print(df.head())
+    print(truth)
