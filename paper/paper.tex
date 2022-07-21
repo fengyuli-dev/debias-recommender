@@ -51,7 +51,7 @@
 \def\Mm{\mathcal{M}}
 
 
-\title{Title}
+\title{Propensity Estimation Matrix Factorization Through Mixed-Quantized Dataset}
 
 
 % The \author macro works with any number of authors. There are two commands
@@ -118,10 +118,9 @@ We hypothesize that quantization and the effect of selection bias on the recomme
 
 In reality, however, less quantized data might only represent a small subset of all the data one is capable of collecting. This is because less quantized data is typically explicit while more quantized data is typically implicit. That is to say, less quantized data would require a user explicitly rating an item, while more quantized data would be more easily gathered by observing the users' behaviors. For example, by observing the movie a user spontaneously chooses to see or if a user watches a movie's trailer to the end, we can easily create a 1-quantized or 2-quantized dataset, correspondingly, without the user paying any effort. In this paper, we propose a novel framework that utilizes these data. Our framework specifically exploits the fact that more quantized data is more susceptible to selection bias and treats it as an advantage that helps less quantized dataset better overcome the damage caused by selection bias.
 
-The main contribution of this work is three-fold:
+The main contribution of this work is two-fold:
 \begin{enumerate}
   \item We design experiments under a simulated environment and shows that a more quantized dataset is more susceptible to selection bias (and thus the MNAR condition.)
-  \item We approach the above empirical results from a theoretical lens and explains the complex relationship between quantization, selection bias, and a recommender's performance using tools from information theory.
   \item We propose a cross-dataset learning framework that empowers existing recommender algorithms to make use of the more quantized, implicit data. \textcolor{red}{EXPLAIN MORE HERE}
 \end{enumerate}
 
@@ -132,8 +131,6 @@ Our hypothesis and theoretical results are verified through a series of empirica
 \subsection{Recommender Systems Against Selection Bias}
 
 \subsection{Quantization}
-
-\section{Theoretical Analysis}
 
 \section{Cross-Dataset Learning Framework}
 
