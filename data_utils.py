@@ -7,21 +7,8 @@ import reclab
 
 EPSILON = 1e-8
 
-
 def generate_ground_truth_matrix(dimensions, environment='random'):
-    """
-    Generates a ground truth matrix.
-
-    Parameters:
-        environment: the behavoral model that establishes the ground truth matrix. A list of predefined, supported
-        environments is available at https://github.com/berkeley-reclab/RecLab/blob/master/reclab/environments/registry.py.
-        dimensions: a tuple containing the dimensions of the matrix.
-
-    Returns:
-        a mxn matrix containing the (continuously distributed) ground truth for each pair of m users and n items.
-    """
     m, n = dimensions
-
     if environment == 'random':
         return np.random.rand(dimensions)
     elif environment == 'ml-100k-v1':
@@ -35,30 +22,8 @@ def generate_ground_truth_matrix(dimensions, environment='random'):
 
 
 def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=None, beta=1, noise=0.05):
-    """
-    Converts a ground truth matrix to a recommender dataset. First simulate the observations on the ground truth
-    matrix, then convert them to a recommender dataset.
-    Bias can be introduced in the dataset.
-
-    Parameters:
-        matrix: a mxn matrix that contains the ground truth for each pair of m users and n items.
-        quantization: the way to quantize / discretize the ratings.
-        sample_prob: the expected probability of sampling a chosen pair of users and items.
-        bias: the type of sampling bias.
-        beta: hyperparameter that controls the degress of the bias.
-        noise: hyperparameter that controls the degree of noise.
-
-    Returns:
-        users: a dictionary whose ith entry is a list of observed ratings for the ith user.
-        itmes: a dictionary whose ith entry is a list of observed ratings for the ith item.
-        ratings: a dictionary whose entry with key (i, j) is the observed rating for user i on item j.
-        P: P[i, j] is the probability of observing rating i on item j.
-        R: R is a quantized version of the input matrix. Noise is also added.
-    """
-
     m, n = matrix.shape
     np.random.shuffle(matrix)
-
     R = matrix.copy()
 
     # Normalize the ground truth and add Gaussian noise
@@ -197,16 +162,6 @@ def sample(value, sample_prob=0.1):
         return value
 
 
-# def correlation(P, matrix, correlation='pearson'):
-#     """
-#     Helper function that computes the correlation between two matrices.
-#     """
-#     if correlation == 'pearson':
-#         return pearsonr(P.flatten(), matrix.flatten())[0]
-#     elif correlation == 'spearman':
-#         return spearmanr(P.flatten(), matrix.flatten())[0]
-
-
 def to_dataframe(ratings):
     ratings_dict = {
         'itemID': [],
@@ -236,11 +191,65 @@ def generate_test_dataframe(R):
     return pd.DataFrame(test_dict)
 
 
+def naive_propensity_estimation(ratings, shape, quantization='onetofive'):
+    assert (quantization == 'onetofive'), 'Other quantizations not supported'
+    proportion = np.zeros(5)
+    count = 0
+    for value in ratings.values():
+        if value is not None:
+            proportion[int(value / 0.2) - 1] += 1
+            count += 1
+    proportion /= proportion.sum()        
+    m, n = shape
+    size = m * n
+    return np.zeros(shape) + count / size
+
+
+def mlp_propensity_estimation():
+    pass
+
+
+def masked_nb_propensity_estimation(truth, ratings, shape, beta=0):
+    proportion = np.zeros(5)
+    count = 0
+    for value in ratings.values():
+        if value is not None:
+            proportion[int(value / 0.2) - 1] += 1
+            count += 1
+    proportion /= proportion.sum() 
+    m, n = shape
+    size = m * n
+    numerator = np.zeros(shape)
+    for key, value in ratings.items():
+        if value is not None:
+            user, item = key
+            numerator[user][item] = proportion[int(value / 0.2) - 1] 
+    numerator = numerator * count / size        
+    _, _, ratings_less_biased, P, R, R_no_noise = ground_truth_matrix_to_dataset(
+        truth, quantization='binary', bias='popularity', beta=beta, sample_prob=0.5)
+    for key, value in ratings.items():
+        if value is not None and ratings_less_biased[key] is None:
+            value = None 
+    proportion = np.zeros(5)
+    for value in ratings.values():
+        if value is not None:
+            proportion[int(value / 0.2) - 1] += 1
+    proportion /= proportion.sum()
+    denominator = np.ones(shape)
+    for (user, item), value in ratings.items():
+        if value is not None:
+            denominator[user][item] = proportion[int(value / 0.2) - 1] 
+    return np.divide(numerator, denominator)    
+
+
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
         (1000, 1000), environment='ml-100k-v1')
     users, items, ratings, P, R, R_no_noise = ground_truth_matrix_to_dataset(
         truth, quantization='onetofive', bias='popularity')
     df = to_dataframe(ratings)
-    print(df.head())
-    print(truth)
+    propensity = masked_nb_propensity_estimation(truth, ratings, P.shape)
+    print(propensity)
+    print(propensity.mean())
+    print(propensity.max())
+    print(propensity.min())
