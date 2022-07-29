@@ -1,16 +1,17 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-from data_utils import generate_ground_truth_matrix, ground_truth_matrix_to_dataset, to_dataframe, generate_test_dataframe
+
+# import os
+# os.environ['KMP_DUPLICATE_LIB_OK']='True'
+                        
+from data_utils import generate_ground_truth_matrix, ground_truth_matrix_to_dataset, to_dataframe, generate_test_dataframe, masked_nb_propensity_estimation
+import numpy as np
 from surprise import Reader
 from surprise import Dataset
-from surprise.model_selection import train_test_split
-from surprise.model_selection import cross_validate
 from surprise import accuracy
-import numpy as np
 from surprise.prediction_algorithms import AlgoBase
 from surprise.prediction_algorithms import PredictionImpossible
 from surprise.utils import get_rng
-
 
 class SVD(AlgoBase):
 
@@ -128,12 +129,15 @@ class SVD(AlgoBase):
 
 class PropensitySVD(AlgoBase):
 
-    def __init__(self, n_factors=100, n_epochs=20, biased=True, init_mean=0,
+    def __init__(self, p, n_factors=100, n_epochs=20, biased=True, init_mean=0,
                  init_std_dev=.1, lr_all=.005,
                  reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None, lr_qi=None,
                  reg_bu=None, reg_bi=None, reg_pu=None, reg_qi=None,
-                 random_state=None, verbose=False, P=np.zeros(1)):
+                 random_state=None, verbose=False):
 
+        if p is None:
+            assert False, 'Please use standard SVD'
+        
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.biased = biased
@@ -149,7 +153,7 @@ class PropensitySVD(AlgoBase):
         self.reg_qi = reg_qi if reg_qi is not None else reg_all
         self.random_state = random_state
         self.verbose = verbose
-        self.P = P
+        self.p = p
 
         AlgoBase.__init__(self)
 
@@ -201,16 +205,16 @@ class PropensitySVD(AlgoBase):
 
                 # update biases
                 if self.biased:
-                    bu[u] += lr_bu * (err - reg_bu * bu[u])
-                    bi[i] += lr_bi * (err - reg_bi * bi[i])
+                    bu[u] += lr_bu * (err - reg_bu * bu[u]) / self.p[u][i]
+                    bi[i] += lr_bi * (err - reg_bi * bi[i]) / self.p[u][i]
 
                 # update factors
                 for f in range(self.n_factors):
                     puf = pu[u, f]
                     qif = qi[i, f]
-                    pu[u, f] += lr_pu * (err * qif - reg_pu * puf)
-                    qi[i, f] += lr_qi * (err * puf - reg_qi * qif)
-
+                    pu[u, f] += lr_pu * (err * qif - reg_pu * puf) / self.p[u][i]
+                    qi[i, f] += lr_qi * (err * puf - reg_qi * qif) / self.p[u][i]
+ 
         self.bu = bu
         self.bi = bi
         self.pu = pu
@@ -252,12 +256,18 @@ if __name__ == '__main__':
     data = Dataset.load_from_df(
         df[['userID', 'itemID', 'rating']], reader)
     trainset = data.build_full_trainset()
+    p = masked_nb_propensity_estimation(truth, ratings, P.shape)
 
-    algo = SVD(n_epochs=1)
-
+    algo_better = PropensitySVD(p, n_epochs=5, verbose=True)
+    algo = SVD(n_epochs=5, verbose=True)
+    algo_better.fit(trainset)
     algo.fit(trainset)
     test_df = generate_test_dataframe(R_no_noise)
     testset = Dataset.load_from_df(
         test_df[['userID', 'itemID', 'rating']], reader).build_full_trainset().build_testset()
+
+    predictions = algo_better.test(testset)
+    print(accuracy.rmse(predictions))
+
     predictions = algo.test(testset)
     print(accuracy.rmse(predictions))

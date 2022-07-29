@@ -49,6 +49,7 @@
 \def\HH{\mathbb{H}}
 \def\Ll{\mathcal{L}}
 \def\Mm{\mathcal{M}}
+\DeclareMathOperator*{\argmin}{arg\,min}
 
 
 \title{Propensity Estimation Matrix Factorization Through Mixed-Quantized Dataset}
@@ -124,7 +125,7 @@ The main contribution of this work is two-fold:
   \item We propose a cross-dataset learning framework that empowers existing recommender algorithms to make use of the more quantized, implicit data. \textcolor{red}{EXPLAIN MORE HERE}
 \end{enumerate}
 
-Our hypothesis and theoretical results are verified through a series of empirical evaluation in a simulated environment where users' behaviors are carefully modeled. We show that our learning framework is significantly better than baseline recommender systems that neglects selection bias. We also show that our methods are substantially better than its single-dataset counterpart. \textcolor{red}{EXPLAIN MORE HERE} 
+Our hypothesis and theoretical results are verified through a series of empirical evaluation in a simulated environment where users' behaviors are carefully modeled. We show that our learning framework is significantly better than baseline recommender systems that neglects selection bias. We also show that our methods are substantially better than its single-dataset counterpart. \textcolor{red}{EXPLAIN MORE HERE}
 
 \section{Related Work}
 
@@ -133,6 +134,16 @@ Our hypothesis and theoretical results are verified through a series of empirica
 \subsection{Quantization}
 
 \section{Cross-Dataset Learning Framework}
+
+\[ \argmin_{V,W,A} \frac{1}{N}\left(\frac{(Y_{u,i}- (V_u^TW_i + A))^2}{P_{u,i}} \right) + c \Vert A \Vert^2\]
+where $A = \{ b_u, b_i, \mu \}$ represents the standard bias parameters (offset), $\hat{Y} = V_u^TW_i + A$ is the predicted rating, and $c \Vert A \Vert^2$ is the regularizer.
+
+Stochastic gradient descent (SGD) step for one sample rating $(i,j)$:
+\[ b_u \gets b_u - \alpha(b_u - \frac{1}{P_{i,j}}(r_{i,j} - \hat{r}_{i,j})) \]
+\[ b_i \gets b_i - \alpha(b_i - \frac{1}{P_{i,j}}(r_{i,j} - \hat{r}_{i,j})) \]
+\[ V_i \gets V_i - \alpha(V_i - \frac{1}{P_{i,j}}W_j(r_{i,j} - \hat{r}_{i,j})) \]
+\[ W_j \gets W_j - \alpha(W_j - \frac{1}{P_{i,j}}V_i(r_{i,j} - \hat{r}_{i,j})) \]
+where $\alpha$ is the learning rate, which can be tuned independently for each parameter. In our experiments, we fix $\alpha$ across parameters.
 
 \section{Experiment}
 We designed experiments under simulated environments that verify the results introduced above. We first verify that more quantized dataset is more susceptible to selection bias and MNAR. We then runs our learning framework and compares it with multiple baselines.

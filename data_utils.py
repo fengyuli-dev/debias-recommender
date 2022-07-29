@@ -1,11 +1,18 @@
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
 import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 from random import random
 from math import exp
 import reclab
+import torch
+from torch.utils.data import DataLoader, TensorDataset
+from torch import nn
 
 EPSILON = 1e-8
+device = torch.device('cpu')
 
 def generate_ground_truth_matrix(dimensions, environment='random'):
     m, n = dimensions
@@ -205,8 +212,49 @@ def naive_propensity_estimation(ratings, shape, quantization='onetofive'):
     return np.zeros(shape) + count / size
 
 
-def mlp_propensity_estimation():
-    pass
+class MLP(nn.Module):
+    def __init__(self):
+        super(MLP, self).__init__()
+        self.flatten = nn.Flatten()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(2, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.flatten(x)
+        y = self.linear_relu_stack(y)
+        return y
+
+
+def mlp_propensity_estimation(ratings):
+    X = []
+    y = []
+    for (user, item), value in ratings.items():
+        X.append([user, item])
+        y.append(0 if value is None else 1)
+    X = torch.tensor(X)
+    y = torch.tensor(y)
+    dataset = TensorDataset(X, y)
+    train_dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
+    model = MLP().to(device)        
+    learning_rate = 1e-3
+    epochs = 100
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+    for batch_no, (X_sample, y_sample) in enumerate(train_dataloader):
+        pred = model(X_sample)
+        loss = loss_fn(pred, y_sample)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        if batch_no == epochs:
+            break
+    return np.array(model.forward(X))
 
 
 def masked_nb_propensity_estimation(truth, ratings, shape, beta=0):
@@ -226,7 +274,7 @@ def masked_nb_propensity_estimation(truth, ratings, shape, beta=0):
             numerator[user][item] = proportion[int(value / 0.2) - 1] 
     numerator = numerator * count / size        
     _, _, ratings_less_biased, P, R, R_no_noise = ground_truth_matrix_to_dataset(
-        truth, quantization='binary', bias='popularity', beta=beta, sample_prob=0.5)
+        truth, quantization='binary', bias='popularity', beta=beta, sample_prob=1)
     for key, value in ratings.items():
         if value is not None and ratings_less_biased[key] is None:
             value = None 
@@ -239,8 +287,9 @@ def masked_nb_propensity_estimation(truth, ratings, shape, beta=0):
     for (user, item), value in ratings.items():
         if value is not None:
             denominator[user][item] = proportion[int(value / 0.2) - 1] 
-    return np.divide(numerator, denominator)    
-
+    result = np.divide(numerator, denominator)    
+    result[result == 0] = 1
+    return result
 
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
@@ -248,7 +297,7 @@ if __name__ == '__main__':
     users, items, ratings, P, R, R_no_noise = ground_truth_matrix_to_dataset(
         truth, quantization='onetofive', bias='popularity')
     df = to_dataframe(ratings)
-    propensity = masked_nb_propensity_estimation(truth, ratings, P.shape)
+    propensity = mlp_propensity_estimation(ratings)
     print(propensity)
     print(propensity.mean())
     print(propensity.max())
