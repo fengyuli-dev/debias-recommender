@@ -1,18 +1,19 @@
-import os
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
-
-import numpy as np
-import pandas as pd
-from scipy.stats import pearsonr, spearmanr
-from random import random
-from math import exp
-import reclab
-import torch
-from torch.utils.data import DataLoader, TensorDataset
 from torch import nn
+from torch.utils.data import DataLoader, TensorDataset
+import torch
+import reclab
+from math import exp
+from random import random
+from scipy.stats import pearsonr, spearmanr
+import pandas as pd
+import numpy as np
+import os
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+
 
 EPSILON = 1e-8
 device = torch.device('cpu')
+
 
 def generate_ground_truth_matrix(dimensions, environment='random'):
     m, n = dimensions
@@ -206,7 +207,7 @@ def naive_propensity_estimation(ratings, shape, quantization='onetofive'):
         if value is not None:
             proportion[int(value / 0.2) - 1] += 1
             count += 1
-    proportion /= proportion.sum()        
+    proportion /= proportion.sum()
     m, n = shape
     size = m * n
     return np.zeros(shape) + count / size
@@ -241,7 +242,7 @@ def mlp_propensity_estimation(ratings):
     y = torch.tensor(y)
     dataset = TensorDataset(X, y)
     train_dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
-    model = MLP().to(device)        
+    model = MLP().to(device)
     learning_rate = 1e-3
     epochs = 100
     loss_fn = nn.CrossEntropyLoss()
@@ -264,20 +265,20 @@ def masked_nb_propensity_estimation(truth, ratings, shape, beta=0):
         if value is not None:
             proportion[int(value / 0.2) - 1] += 1
             count += 1
-    proportion /= proportion.sum() 
+    proportion /= proportion.sum()
     m, n = shape
     size = m * n
     numerator = np.zeros(shape)
     for key, value in ratings.items():
         if value is not None:
             user, item = key
-            numerator[user][item] = proportion[int(value / 0.2) - 1] 
-    numerator = numerator * count / size        
+            numerator[user][item] = proportion[int(value / 0.2) - 1]
+    numerator = numerator * count / size
     _, _, ratings_less_biased, P, R, R_no_noise = ground_truth_matrix_to_dataset(
         truth, quantization='binary', bias='popularity', beta=beta, sample_prob=1)
     for key, value in ratings.items():
         if value is not None and ratings_less_biased[key] is None:
-            value = None 
+            value = None
     proportion = np.zeros(5)
     for value in ratings.values():
         if value is not None:
@@ -286,10 +287,11 @@ def masked_nb_propensity_estimation(truth, ratings, shape, beta=0):
     denominator = np.ones(shape)
     for (user, item), value in ratings.items():
         if value is not None:
-            denominator[user][item] = proportion[int(value / 0.2) - 1] 
-    result = np.divide(numerator, denominator)    
+            denominator[user][item] = proportion[int(value / 0.2) - 1]
+    result = np.divide(numerator, denominator)
     result[result == 0] = 1
     return result
+
 
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
