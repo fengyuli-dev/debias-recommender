@@ -1,2 +1,0 @@
-{"rule":"DT_JJ_NO_NOUN","sentence":"^\\QFor example, a typical movie rating dataset is a 5-quantization.\\E$"}
-{"rule":"DT_JJ_NO_NOUN","sentence":"^\\QA tinder like/dislike dataset is a 2-quantization.\\E$"}
