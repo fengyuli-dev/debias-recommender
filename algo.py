@@ -52,7 +52,7 @@ class SVD(AlgoBase):
         r, err, dot, puf, qif = 0., 0., 0., 0., 0.
         global_mean = self.trainset.global_mean
 
-        lr_bu = self.lr_bucod
+        lr_bu = self.lr_bu
         lr_bi = self.lr_bi
         lr_pu = self.lr_pu
         lr_qi = self.lr_qi
