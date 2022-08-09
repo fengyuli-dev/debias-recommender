@@ -233,6 +233,9 @@ class MLP(nn.Module):
 
 
 def mlp_propensity_estimation(ratings):
+    '''
+    Not working yet.
+    '''
     X = []
     y = []
     for (user, item), value in ratings.items():
