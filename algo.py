@@ -4,7 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 # import os
 # os.environ['KMP_DUPLICATE_LIB_OK']='True'
                         
-from data_utils import generate_ground_truth_matrix, ground_truth_matrix_to_dataset, to_dataframe, generate_test_dataframe, masked_nb_propensity_estimation
+from data_utils import generate_ground_truth_matrix, ground_truth_matrix_to_dataset, to_dataframe, generate_test_dataframe, masked_nb_propensity_estimation, naive_propensity_estimation
 import numpy as np
 from surprise import Reader
 from surprise import Dataset
@@ -250,18 +250,20 @@ if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
         (1000, 1000), environment='ml-100k-v1')
     users, items, ratings, P, R, R_no_noise = ground_truth_matrix_to_dataset(
-        truth, quantization='onetofive', bias='popularity')
+        truth, quantization='onetofive', bias='full underlying', beta=1)
     df = to_dataframe(ratings)
     reader = Reader(rating_scale=(0, 1))
     data = Dataset.load_from_df(
         df[['userID', 'itemID', 'rating']], reader)
     trainset = data.build_full_trainset()
-    p = masked_nb_propensity_estimation(truth, ratings, P.shape, beta=0)
-
-    algo_better = PropensitySVD(p, n_epochs=20, verbose=True)
-    algo = SVD(n_epochs=20, verbose=True)
+    p = masked_nb_propensity_estimation(truth, ratings, P.shape, beta=0.5)
+    p_naive = naive_propensity_estimation(ratings, P.shape)
+    algo_better = PropensitySVD(p, n_epochs=5, verbose=True)
+    algo = PropensitySVD(p_naive, n_epochs=5, verbose=True)
+    algo_worst = SVD(n_epochs=5, verbose=True)
     algo_better.fit(trainset)
     algo.fit(trainset)
+    algo_worst.fit(trainset)
     test_df = generate_test_dataframe(R_no_noise)
     testset = Dataset.load_from_df(
         test_df[['userID', 'itemID', 'rating']], reader).build_full_trainset().build_testset()
@@ -270,4 +272,7 @@ if __name__ == '__main__':
     print(accuracy.rmse(predictions))
 
     predictions = algo.test(testset)
+    print(accuracy.rmse(predictions))
+
+    predictions = algo_worst.test(testset)
     print(accuracy.rmse(predictions))

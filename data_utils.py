@@ -7,6 +7,7 @@ from random import random
 from scipy.stats import pearsonr, spearmanr
 import pandas as pd
 import numpy as np
+from copy import deepcopy
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
@@ -210,7 +211,8 @@ def naive_propensity_estimation(ratings, shape, quantization='onetofive'):
     proportion /= proportion.sum()
     m, n = shape
     size = m * n
-    return np.zeros(shape) + count / size
+    result = np.zeros(shape) + count / size
+    return result / result.mean()
 
 
 class MLP(nn.Module):
@@ -277,22 +279,39 @@ def masked_nb_propensity_estimation(truth, ratings, shape, beta=0):
             user, item = key
             numerator[user][item] = proportion[int(value / 0.2) - 1]
     numerator = numerator * count / size
+
     _, _, ratings_less_biased, P, R, R_no_noise = ground_truth_matrix_to_dataset(
-        truth, quantization='binary', bias='popularity', beta=beta, sample_prob=1)
+        truth, quantization='binary', bias='full underlying', beta=beta, sample_prob=1)
+    ratings_copy = deepcopy(ratings)
+
     for key, value in ratings.items():
         if value is not None and ratings_less_biased[key] is None:
-            ratings[key] = None
+            ratings_copy[key] = None
+
     proportion = np.zeros(5)
-    for value in ratings.values():
+    for value in ratings_copy.values():
         if value is not None:
             proportion[int(value / 0.2) - 1] += 1
     proportion /= proportion.sum()
+
+    # just check
+    # _, _, ratings_ml100k, _, _, _ = ground_truth_matrix_to_dataset(
+    #     truth, quantization='onetofive', bias=None)
+    # proportion_truth = np.zeros(5)
+    # for value in ratings_ml100k.values():
+    #     if value is not None:
+    #         proportion_truth[int(value / 0.2) - 1] += 1
+    #         count += 1
+    # proportion_truth /= proportion_truth.sum()
+    # print(proportion_truth)
+    # print(proportion)
+
     denominator = np.ones(shape)
     for (user, item), value in ratings.items():
         if value is not None:
             denominator[user][item] = proportion[int(value / 0.2) - 1]
     result = np.divide(numerator, denominator)
-    result[result == 0] = 1
+    result[result == 0] = 0.1
     return result
 
 
@@ -300,9 +319,9 @@ if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
         (1000, 1000), environment='ml-100k-v1')
     users, items, ratings, P, R, R_no_noise = ground_truth_matrix_to_dataset(
-        truth, quantization='onetofive', bias='popularity')
+        truth, quantization='onetofive', bias='full underlying', beta=5)
     df = to_dataframe(ratings)
-    propensity = mlp_propensity_estimation(ratings)
+    propensity = masked_nb_propensity_estimation(truth, ratings, P.shape)
     print(propensity)
     print(propensity.mean())
     print(propensity.max())
