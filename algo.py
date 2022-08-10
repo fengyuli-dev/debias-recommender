@@ -256,10 +256,10 @@ if __name__ == '__main__':
     data = Dataset.load_from_df(
         df[['userID', 'itemID', 'rating']], reader)
     trainset = data.build_full_trainset()
-    p = masked_nb_propensity_estimation(truth, ratings, P.shape)
+    p = masked_nb_propensity_estimation(truth, ratings, P.shape, beta=0)
 
-    algo_better = PropensitySVD(p, n_epochs=5, verbose=True)
-    algo = SVD(n_epochs=5, verbose=True)
+    algo_better = PropensitySVD(p, n_epochs=20, verbose=True)
+    algo = SVD(n_epochs=20, verbose=True)
     algo_better.fit(trainset)
     algo.fit(trainset)
     test_df = generate_test_dataframe(R_no_noise)

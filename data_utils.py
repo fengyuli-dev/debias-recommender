@@ -281,7 +281,7 @@ def masked_nb_propensity_estimation(truth, ratings, shape, beta=0):
         truth, quantization='binary', bias='popularity', beta=beta, sample_prob=1)
     for key, value in ratings.items():
         if value is not None and ratings_less_biased[key] is None:
-            value = None
+            ratings[key] = None
     proportion = np.zeros(5)
     for value in ratings.values():
         if value is not None:
