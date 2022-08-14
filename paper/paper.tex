@@ -16,7 +16,7 @@
 
 
 % to compile a camera-ready version, add the [final] option, e.g.:
-\usepackage[preprint]{neurips_2022}
+\usepackage{neurips_2022}
 
 
 % to avoid loading the natbib package, add option nonatbib:
@@ -52,7 +52,7 @@
 \DeclareMathOperator*{\argmin}{arg\,min}
 
 
-\title{Data-Centric Recommender System for Tackling Selection Bias-induced Distribution Shift}
+\title{Data-Centric Recommender System for Overcoming Selection Bias-induced Distribution Shift}
 
 
 % The \author macro works with any number of authors. There are two commands
@@ -108,11 +108,13 @@ Our hypothesis and theoretical results are verified through a series of empirica
 
 \section{Related Work}
 
-\subsection{Recommender Systems Against Selection Bias}
+\section{Susceptibility to Selection Bias}
 
-\subsection{Quantization}
+\subsection{Simulated Environment for Controlling Bias}
 
-\section{Cross-Dataset Learning Framework}
+\subsection{Results}
+
+\section{Cross-Dataset Propensity Estimation}
 
 \[ \argmin_{V,W,A} \frac{1}{N}\left(\frac{(Y_{u,i}- (V_u^TW_i + A))^2}{P_{u,i}} \right) + c \Vert A \Vert^2\]
 where $A = \{ b_u, b_i, \mu \}$ represents the standard bias parameters (offset), $\hat{Y} = V_u^TW_i + A$ is the predicted rating, and $c \Vert A \Vert^2$ is the regularizer.
@@ -127,13 +129,15 @@ where $\alpha$ is the learning rate, which can be tuned independently for each p
 \section{Experiment}
 We designed experiments under simulated environments that verify the results introduced above. We first verify that more quantized dataset is more susceptible to selection bias and MNAR. We then runs our learning framework and compares it with multiple baselines.
 
-\subsection{Experiment Setup}
-
-\subsection{Controlling Bias}
+\subsection{Dataset and Baselines}
 
 \subsection{Results}
 
 \section{Conclusion}
+
+\section*{Acknowledgements}
+
+\section*{References}
 
 \section{Draft Area}
  (Consider using 2-dimensional Gaussian?)\\

@@ -12,6 +12,7 @@ from surprise import accuracy
 from surprise.prediction_algorithms import AlgoBase
 from surprise.prediction_algorithms import PredictionImpossible
 from surprise.utils import get_rng
+from copy import deepcopy
 
 class SVD(AlgoBase):
 
@@ -19,7 +20,7 @@ class SVD(AlgoBase):
                  init_std_dev=.1, lr_all=.005,
                  reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None, lr_qi=None,
                  reg_bu=None, reg_bi=None, reg_pu=None, reg_qi=None,
-                 random_state=None, verbose=False):
+                 random_state=None):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
@@ -35,18 +36,21 @@ class SVD(AlgoBase):
         self.reg_pu = reg_pu if reg_pu is not None else reg_all
         self.reg_qi = reg_qi if reg_qi is not None else reg_all
         self.random_state = random_state
-        self.verbose = verbose
+        self.models = []
 
         AlgoBase.__init__(self)
 
-    def fit(self, trainset):
+    def fit(self, trainset, verbose=False):
 
         AlgoBase.fit(self, trainset)
-        self.sgd(trainset)
+        self.sgd(trainset, verbose=verbose)
 
-        return self
+        if not verbose:
+            return self
+        else:
+            return self, self.models
 
-    def sgd(self, trainset):
+    def sgd(self, trainset, verbose=False):
 
         u, i, f = 0, 0, 0
         r, err, dot, puf, qif = 0., 0., 0., 0., 0.
@@ -75,8 +79,8 @@ class SVD(AlgoBase):
             global_mean = 0
 
         for current_epoch in range(self.n_epochs):
-            if self.verbose:
-                print("Processing epoch {}".format(current_epoch))
+            # if self.verbose:
+            #     print("Processing epoch {}".format(current_epoch))
             for u, i, r in trainset.all_ratings():
 
                 # compute current error
@@ -97,10 +101,13 @@ class SVD(AlgoBase):
                     pu[u, f] += lr_pu * (err * qif - reg_pu * puf)
                     qi[i, f] += lr_qi * (err * puf - reg_qi * qif)
 
-        self.bu = bu
-        self.bi = bi
-        self.pu = pu
-        self.qi = qi
+            self.bu = bu
+            self.bi = bi
+            self.pu = pu
+            self.qi = qi
+
+            if verbose:
+                self.models.append(deepcopy(self)) 
 
     def estimate(self, u, i):
         known_user = self.trainset.knows_user(u)
@@ -133,7 +140,7 @@ class PropensitySVD(AlgoBase):
                  init_std_dev=.1, lr_all=.005,
                  reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None, lr_qi=None,
                  reg_bu=None, reg_bi=None, reg_pu=None, reg_qi=None,
-                 random_state=None, verbose=False):
+                 random_state=None):
 
         if p is None:
             assert False, 'Please use standard SVD'
@@ -152,19 +159,22 @@ class PropensitySVD(AlgoBase):
         self.reg_pu = reg_pu if reg_pu is not None else reg_all
         self.reg_qi = reg_qi if reg_qi is not None else reg_all
         self.random_state = random_state
-        self.verbose = verbose
         self.p = p
+        self.models = []
 
         AlgoBase.__init__(self)
 
-    def fit(self, trainset):
+    def fit(self, trainset, verbose=False):
 
         AlgoBase.fit(self, trainset)
-        self.sgd(trainset)
+        self.sgd(trainset, verbose=verbose)
 
-        return self
+        if not verbose:
+            return self
+        else:
+            return self, self.models
 
-    def sgd(self, trainset):
+    def sgd(self, trainset, verbose=False):
 
         u, i, f = 0, 0, 0
         r, err, dot, puf, qif = 0., 0., 0., 0., 0.
@@ -193,8 +203,8 @@ class PropensitySVD(AlgoBase):
             global_mean = 0
 
         for current_epoch in range(self.n_epochs):
-            if self.verbose:
-                print("Processing epoch {}".format(current_epoch))
+            # if self.verbose:
+            #     print("Processing epoch {}".format(current_epoch))
             for u, i, r in trainset.all_ratings():
 
                 # compute current error
@@ -215,10 +225,13 @@ class PropensitySVD(AlgoBase):
                     pu[u, f] += lr_pu * (err * qif - reg_pu * puf) / self.p[u][i]
                     qi[i, f] += lr_qi * (err * puf - reg_qi * qif) / self.p[u][i]
  
-        self.bu = bu
-        self.bi = bi
-        self.pu = pu
-        self.qi = qi
+            self.bu = bu
+            self.bi = bi
+            self.pu = pu
+            self.qi = qi
+
+            if verbose:
+                self.models.append(deepcopy(self))        
 
     def estimate(self, u, i):
         known_user = self.trainset.knows_user(u)
@@ -258,12 +271,12 @@ if __name__ == '__main__':
     trainset = data.build_full_trainset()
     p = masked_nb_propensity_estimation(truth, ratings, P.shape, beta=0.5)
     p_naive = naive_propensity_estimation(ratings, P.shape)
-    algo_better = PropensitySVD(p, n_epochs=5, verbose=True)
-    algo = PropensitySVD(p_naive, n_epochs=5, verbose=True)
-    algo_worst = SVD(n_epochs=5, verbose=True)
-    algo_better.fit(trainset)
-    algo.fit(trainset)
-    algo_worst.fit(trainset)
+    algo_better = PropensitySVD(p, n_epochs=5)
+    algo = PropensitySVD(p_naive, n_epochs=5)
+    algo_worst = SVD(n_epochs=5)
+    _, algo_better_track = algo_better.fit(trainset, verbose=True)
+    _, algo_track = algo.fit(trainset, verbose=True)
+    _, algo_worst_track = algo_worst.fit(trainset, verbose=True)
     test_df = generate_test_dataframe(R_no_noise)
     testset = Dataset.load_from_df(
         test_df[['userID', 'itemID', 'rating']], reader).build_full_trainset().build_testset()
@@ -276,3 +289,5 @@ if __name__ == '__main__':
 
     predictions = algo_worst.test(testset)
     print(accuracy.rmse(predictions))
+
+    print(algo_better_track)
