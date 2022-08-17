@@ -33,7 +33,7 @@
 \usepackage{microtype}      % microtypography
 \usepackage{xcolor}         % colors
 \usepackage{amsmath}
-
+\bibliographystyle{ksfh_nat}
 
 \newcommand{\vect}[1]{\boldsymbol{#1}}
 \newcommand{\mb}[1]{\mathbf{#1}}
@@ -52,7 +52,7 @@
 \DeclareMathOperator*{\argmin}{arg\,min}
 
 
-\title{Data-Centric Recommender System for Overcoming Selection Bias-induced Distribution Shift}
+\title{Cross-Dataset Recommender System for \\Overcoming Selection Bias}
 
 
 % The \author macro works with any number of authors. There are two commands
@@ -86,13 +86,18 @@
   both the left- and right-hand margins. Use 10~point type, with a vertical
   spacing (leading) of 11~points.  The word \textbf{Abstract} must be centered,
   bold, and in point size 12. Two line spaces precede the abstract. The abstract
-  must be limited to one paragraph.
+  must be limited to one paragraph. The abstract paragraph should be indented \nicefrac{1}{2}~inch (3~picas) on
+  both the left- and right-hand margins. Use 10~point type, with a vertical
+  spacing (leading) of 11~points.  The word \textbf{Abstract} must be centered,
+  bold, and in point size 12. Two line spaces precede the abstract. The abstract
+  must be limited to one paragraph. testf
 \end{abstract}
 
 \section{Introduction}
-Selection bias is one of the most prevalent source of biases in a dataset for recommender systems. Selection bias happens when there is a pattern in the items that a user rates, either implicitly or explicitly. For example, in a recommender system for movies, users might only watch and rate the movies that are attractive to them in the first place. Selection bias is particularly relevant to recommender systems because when the system actively recommends items that the users like, it is creating bias by preventing users from accessing uncovered items. Selection bias introduces a Missing Not At Random (MNAR) condition to the observed dataset by conditioning it on the predictions of the recommender system. Tackling the selection bias in a recommender dataset has been a constant challenge in designing recommender algorithms
+Selection bias is one of the most prevalent sources of distribution shift for recommender systems. Selection bias happens when there is a pattern in the users' ratings that is unique to the training set, either implicitly or explicitly. For example, in a recommender system for movies, users might only watch and rate movies that they particularly like, while distribution the recommender system is deployed on contains all movies regardless of person al tastes. Tackling the selection bias in a recommender dataset has been a constant challenge in designing recommender algorithms
 
 Quantization is a practical way to categorize an input from a continuous distribution to a discrete set of bins. We assume the ground truth of a user's rating is a continuous distribution over items because of the inherent impossibility of numerically expressing the feeling of enjoyment and excitement. We treat a recommender dataset as a noised quantization of the ground truth. In other words, users convert their feelings into one of the discrete choices when they rate an item. Recommender datasets are quantized into different degrees. For example, a typical movie rating dataset uses a 5-quantization. A tinder like/dislike dataset uses a 2-quantization.
+
 
 We hypothesize that quantization and the effect of selection bias on the recommender system is positively correlated: the more quantized the dataset is (the fewer bins there are), the more severe the selection bias becomes in terms of the recommender system's performance. Therefore, a good-performing recommender system should prioritize training data that is less quantized. 
 
@@ -100,11 +105,9 @@ In reality, however, less quantized data might only represent a small subset of 
 
 The main contribution of this work is two-fold:
 \begin{enumerate}
-  \item We design experiments under a simulated environment and shows that a more quantized dataset is more susceptible to selection bias (and thus the MNAR condition.)
-  \item We propose a cross-dataset learning framework that empowers existing recommender algorithms to make use of the more quantized, implicit data. \textcolor{red}{EXPLAIN MORE HERE}
+  \item We design experiments under a simulated environment and shows that susceptibility to selection bias is likely not correlated with the way a dataset is quantized.
+  \item We propose a cross-dataset learning framework that empowers existing recommender algorithms to make use of the more quantized, less biased data. We carried out experiment and found our method outperforming baselines by a significant margin.
 \end{enumerate}
-
-Our hypothesis and theoretical results are verified through a series of empirical evaluation in a simulated environment where users' behaviors are carefully modeled. We show that our learning framework is significantly better than baseline recommender systems that neglects selection bias. We also show that our methods are substantially better than its single-dataset counterpart. \textcolor{red}{EXPLAIN MORE HERE}
 
 \section{Related Work}
 
@@ -113,6 +116,7 @@ Our hypothesis and theoretical results are verified through a series of empirica
 \subsection{Simulated Environment for Controlling Bias}
 
 \subsection{Results}
+\bibliography{refs}
 
 \section{Cross-Dataset Propensity Estimation}
 
@@ -138,6 +142,7 @@ We designed experiments under simulated environments that verify the results int
 \section*{Acknowledgements}
 
 \section*{References}
+\bibliography{refs}
 
 \section{Draft Area}
  (Consider using 2-dimensional Gaussian?)\\
