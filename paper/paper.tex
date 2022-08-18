@@ -17,7 +17,7 @@
 
 % to compile a camera-ready version, add the [final] option, e.g.:
 \usepackage{neurips_2022}
-
+\bibliographystyle{plain}
 
 % to avoid loading the natbib package, add option nonatbib:
 %    \usepackage[nonatbib]{neurips_2022}
@@ -33,7 +33,6 @@
 \usepackage{microtype}      % microtypography
 \usepackage{xcolor}         % colors
 \usepackage{amsmath}
-\bibliographystyle{ksfh_nat}
 
 \newcommand{\vect}[1]{\boldsymbol{#1}}
 \newcommand{\mb}[1]{\mathbf{#1}}
@@ -90,33 +89,28 @@
   both the left- and right-hand margins. Use 10~point type, with a vertical
   spacing (leading) of 11~points.  The word \textbf{Abstract} must be centered,
   bold, and in point size 12. Two line spaces precede the abstract. The abstract
-  must be limited to one paragraph. testf
+  must be limited to one paragraph.
 \end{abstract}
 
 \section{Introduction}
-Selection bias is one of the most prevalent sources of distribution shift for recommender systems. Selection bias happens when there is a pattern in the users' ratings that is unique to the training set, either implicitly or explicitly. For example, in a recommender system for movies, users might only watch and rate movies that they particularly like, while distribution the recommender system is deployed on contains all movies regardless of person al tastes. Tackling the selection bias in a recommender dataset has been a constant challenge in designing recommender algorithms
+Selection bias is one of the most prevalent sources of biases for recommender systems \cite{chen2020bias}. Selection bias happens when there is a pattern in the users' ratings that is unique to the training set. For example, in a recommender system for movies, users might mainly rate movies that are recommended to them, which is a small section of movies already tailored to the users' propensities. However, the environment the recommender system is deployed on contains all movies regardless of personal tastes. This discrepancy produces a misalignment between training and deployed settings, which is known as a distribution shift. Tackling the selection bias in a recommender dataset has been a constant challenge in designing recommender algorithms\cite{schnabel2016recommendations}.
 
-Quantization is a practical way to categorize an input from a continuous distribution to a discrete set of bins. We assume the ground truth of a user's rating is a continuous distribution over items because of the inherent impossibility of numerically expressing the feeling of enjoyment and excitement. We treat a recommender dataset as a noised quantization of the ground truth. In other words, users convert their feelings into one of the discrete choices when they rate an item. Recommender datasets are quantized into different degrees. For example, a typical movie rating dataset uses a 5-quantization. A tinder like/dislike dataset uses a 2-quantization.
+When recommender systems are deployed in real-world platforms, it is arguably likely that the clients are able to collect rating-associated data from different source distributions. These data (or feedbacks) are either implicit or explicit \cite{aggarwal2016recommender}, while implicit data often comes in a highly-quantized, binary form and explicit data is usually less quantized. For example, a user's explicit rating of a movie is usually quantized to a number between 1 and 5, while the implicit feedback, such as if a user spontaneous searches for a movie, is often binary (more quantized.) We extend our hypothesis and argue that implicit data contains less or no selection bias compared to explicit data. This is because implicit data are often from users' spontaneous actions while explicit data are prejudiced toward the output of the recommender system in the previous feedback loop and users' innate biases.
 
+In this paper, we attempt to take advantage of datasets from differently quantized sources. More specifically, we proposed a way to feed both a 5-quantized dataset and a binary dataset to any gradient-based recommender algorithm.  To ensure both datasets do not significantly lose their values in the presence of selection bias, we first examine the susceptibility to selection bias of differently quantized datasets from a single distribution. We design experiments under a simulated environment and shows that susceptibility to selection bias is not correlated with the way a dataset is quantized. 
 
-We hypothesize that quantization and the effect of selection bias on the recommender system is positively correlated: the more quantized the dataset is (the fewer bins there are), the more severe the selection bias becomes in terms of the recommender system's performance. Therefore, a good-performing recommender system should prioritize training data that is less quantized. 
+Then, since a less-quantized dataset inherently contains more information than a more-quantized dataset \cite{widrow1996statistical} and thus is more suitable for training, we decided to use it as the training data of matrix factorization and use the more-quantized dataset for propensity scoring and deriving the inverse-probability-scoring (IPS) estimator \cite{thompson2012sampling} \cite{imbens2015causal}, a causal inference approach applicable to matrix completion-based recommender algorithms. In this way, our cross-dataset learning framework empowers existing recommender algorithms to make use of the more quantized, less biased data. We carried out experiment and found our method outperforming baselines by a significant margin.
 
-In reality, however, less quantized data might only represent a small subset of all the data one is capable of collecting. This is because less quantized data is typically explicit while more quantized data is typically implicit. That is to say, less quantized data would require a user explicitly rating an item, while more quantized data would be more easily gathered by observing the users' behaviors. For example, by observing the movie a user spontaneously chooses to see or if a user watches a movie's trailer to the end, we can easily create a 1-quantized or 2-quantized dataset, correspondingly, without the user paying any effort. In this paper, we propose a novel framework that utilizes these data. Our framework specifically exploits the fact that more quantized data is more susceptible to selection bias and treats it as an advantage that helps less quantized dataset better overcome the damage caused by selection bias.
-
-The main contribution of this work is two-fold:
-\begin{enumerate}
-  \item We design experiments under a simulated environment and shows that susceptibility to selection bias is likely not correlated with the way a dataset is quantized.
-  \item We propose a cross-dataset learning framework that empowers existing recommender algorithms to make use of the more quantized, less biased data. We carried out experiment and found our method outperforming baselines by a significant margin.
-\end{enumerate}
+% Quantization is a practical way to categorize an input from a continuous distribution to a discrete set of bins. We assume the ground truth of a user's rating is a continuous distribution over items because of the inherent impossibility of numerically expressing the feeling of enjoyment and excitement. We treat a recommender dataset as a noised quantization of the ground truth. In other words, users convert their feelings into one of the discrete choices when they rate an item. Recommender datasets are quantized into different degrees. For example, a typical movie rating dataset uses a 5-quantization. A tinder like/dislike dataset uses a 2-quantization.
 
 \section{Related Work}
+Prior works on overcoming selection bias-induced distribution shift fall
 
 \section{Susceptibility to Selection Bias}
 
 \subsection{Simulated Environment for Controlling Bias}
 
 \subsection{Results}
-\bibliography{refs}
 
 \section{Cross-Dataset Propensity Estimation}
 
@@ -141,8 +135,7 @@ We designed experiments under simulated environments that verify the results int
 
 \section*{Acknowledgements}
 
-\section*{References}
-\bibliography{refs}
+\bibliography{refs} 
 
 \section{Draft Area}
  (Consider using 2-dimensional Gaussian?)\\
