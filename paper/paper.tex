@@ -33,6 +33,8 @@
 \usepackage{microtype}      % microtypography
 \usepackage{xcolor}         % colors
 \usepackage{amsmath}
+\usepackage{graphicx}
+\graphicspath{ {./figures/} }
 
 \newcommand{\vect}[1]{\boldsymbol{#1}}
 \newcommand{\mb}[1]{\mathbf{#1}}
@@ -112,22 +114,41 @@ The IPS method in our context is, essentially, a method of weighting training ex
 We first examine the susceptibility to selection bias of differently quantized data by manually introducing biased distributions of various degrees to the differently quantized training sets. It is crucial for us that the 2-quantized datasets do not exhibit particular weakness when facing selection bias so that they can be properly adopted for propensity estimation.
 
 \subsection{Simulated Environment for Controlling Bias}
-Since selection bias is uncontrollable in a dataset completely drawn from real-world, we have to adopt a simulated environment \cite{krauth2020offline} with both semi-synthetic and synthetic datasets, which shall be explained in section 5. In our environment, we propose the \textbf{softmax observation model} and introduce a hyperparameter $\beta$ to control the degree of bias. For a rating matrix $R$, the corresponding probability matrix of each rating being observed is $\Pr(R_{u,i}\text{ is observed}) = k\text{softmax}(R_{u,i})$, where $k$ is set so that the expected proportion of observed ratings is controlled. The effect of $\beta$ on probability of being observed for different ratings is visualized in xxx. In our experiment we assume constantly $10\%$ of ratings are observed.
+Since selection bias is uncontrollable in a dataset completely drawn from real-world, we have to adopt a simulated environment \cite{krauth2020offline} with both semi-synthetic and synthetic datasets, which shall be explained in section 5. In our environment, we propose the \textbf{softmax observation model} and introduce a hyperparameter $\beta$ to control the degree of bias. For a rating matrix $R$, the corresponding probability matrix of each rating being observed is $\Pr(R_{u,i}\text{ is observed}) = k\text{softmax}(\beta R_{u,i})$, where $k$ is set so that the expected proportion of observed ratings is controlled. The effect of $\beta$ on probability of being observed for different ratings is visualized in figure 1. In our experiment we assume constantly $10\%$ of ratings are observed.
 \begin{figure}
   \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  \caption{Sample figure caption.}
+  \includegraphics[width=\textwidth]{visualize.png}
+  \caption{Visualizing the effect of controlling bias}
 \end{figure}
 
 \subsection{Results}
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{1.png}
+  \caption{The effect of selection bias is not affected by quantization}
+\end{figure}
+Figure 2 shows our results on two dataset (see section 5) and 3 classic algorithms: user-KNN, item-KNN, and SVD matrix factorization. Although the RMSE grows consistently as $\beta$ increases for all datasets and algorithms, differently quantized datasets do not exhibit significantly different growth rates. We thus conclude it is a viable approach to use the more quantized, less biased dataset for propensity estimation.
 
 \section{Cross-Dataset Propensity Estimation}
+
+
 
 \[ \argmin_{V,W,A} \frac{1}{N}\left(\frac{(Y_{u,i}- (V_u^TW_i + A))^2}{P_{u,i}} \right) + c \Vert A \Vert^2\]
 where $A = \{ b_u, b_i, \mu \}$ represents the standard bias parameters (offset), $\hat{Y} = V_u^TW_i + A$ is the predicted rating, and $c \Vert A \Vert^2$ is the regularizer.
 
 \section{Experiment}
 We designed experiments under simulated environments that verify the results introduced above.
+
+\subsection{Datasets}
+We used two datasets in our simulated environment:\\
+
+\textbf{Imputed ML100K Dataset.}
+
+\textbf{Latent Factors Simulated Dataset.}
+
+\subsection{Baselines}
+
+\subsection{Results}
 
 \begin{table}
   \caption{Test set RMSE and MAE for MF-NBPE and baselines}
@@ -145,18 +166,6 @@ We designed experiments under simulated environments that verify the results int
     \bottomrule
   \end{tabular}
 \end{table}
-
-
-\subsection{Datasets}
-We used two datasets in our simulated environment:\\
-
-\textbf{Imputed ML100K Dataset.}
-
-\textbf{Latent Factors Simulated Dataset.}
-
-\subsection{Baselines}
-
-\subsection{Results}
 
 \section{Conclusion}
 
