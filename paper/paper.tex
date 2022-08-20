@@ -109,8 +109,15 @@ Prior works on overcoming selection bias-induced distribution shift via a propen
 The IPS method in our context is, essentially, a method of weighting training examples to correct the bias in the training data. Equivalent approaches such as importance weighting are widely used for domain adaptation in fields other than recommender systems \cite{sugiyama2007covariate} \cite{zhang2018importance}. Discussions on the IPS-based domain adaptation for countering selection bias, which is most relevant to recommender systems, remain limited.
 
 \section{Susceptibility to Selection Bias}
+We first examine the susceptibility to selection bias of differently quantized data by manually introducing biased distributions of various degrees to the differently quantized training sets. It is crucial for us that the 2-quantized datasets do not exhibit particular weakness when facing selection bias so that they can be properly adopted for propensity estimation.
 
 \subsection{Simulated Environment for Controlling Bias}
+Since selection bias is uncontrollable in a dataset completely drawn from real-world, we have to adopt a simulated environment \cite{krauth2020offline} with both semi-synthetic and synthetic datasets, which shall be explained in section 5. In our environment, we propose the \textbf{softmax observation model} and introduce a hyperparameter $\beta$ to control the degree of bias. For a rating matrix $R$, the corresponding probability matrix of each rating being observed is $\Pr(R_{u,i}\text{ is observed}) = k\text{softmax}(R_{u,i})$, where $k$ is set so that the expected proportion of observed ratings is controlled. The effect of $\beta$ on probability of being observed for different ratings is visualized in xxx. In our experiment we assume constantly $10\%$ of ratings are observed.
+\begin{figure}
+  \centering
+  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+  \caption{Sample figure caption.}
+\end{figure}
 
 \subsection{Results}
 
@@ -119,17 +126,35 @@ The IPS method in our context is, essentially, a method of weighting training ex
 \[ \argmin_{V,W,A} \frac{1}{N}\left(\frac{(Y_{u,i}- (V_u^TW_i + A))^2}{P_{u,i}} \right) + c \Vert A \Vert^2\]
 where $A = \{ b_u, b_i, \mu \}$ represents the standard bias parameters (offset), $\hat{Y} = V_u^TW_i + A$ is the predicted rating, and $c \Vert A \Vert^2$ is the regularizer.
 
-Stochastic gradient descent (SGD) step for one sample rating $(i,j)$:
-\[ b_u \gets b_u - \alpha(b_u - \frac{1}{P_{i,j}}(r_{i,j} - \hat{r}_{i,j})) \]
-\[ b_i \gets b_i - \alpha(b_i - \frac{1}{P_{i,j}}(r_{i,j} - \hat{r}_{i,j})) \]
-\[ V_i \gets V_i - \alpha(V_i - \frac{1}{P_{i,j}}W_j(r_{i,j} - \hat{r}_{i,j})) \]
-\[ W_j \gets W_j - \alpha(W_j - \frac{1}{P_{i,j}}V_i(r_{i,j} - \hat{r}_{i,j})) \]
-where $\alpha$ is the learning rate, which can be tuned independently for each parameter. In our experiments, we fix $\alpha$ across parameters.
-
 \section{Experiment}
-We designed experiments under simulated environments that verify the results introduced above. We first verify that more quantized dataset is more susceptible to selection bias and MNAR. We then runs our learning framework and compares it with multiple baselines.
+We designed experiments under simulated environments that verify the results introduced above.
 
-\subsection{Dataset and Baselines}
+\begin{table}
+  \caption{Test set RMSE and MAE for MF-NBPE and baselines}
+  \label{sample-table}
+  \centering
+  \begin{tabular}{lll}
+    \toprule
+    \multicolumn{2}{c}{Part}                   \\
+    \cmidrule(r){1-2}
+    Name     & Description     & Size ($\mu$m) \\
+    \midrule
+    Dendrite & Input terminal  & $\sim$100     \\
+    Axon     & Output terminal & $\sim$10      \\
+    Soma     & Cell body       & up to $10^6$  \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+
+\subsection{Datasets}
+We used two datasets in our simulated environment:\\
+
+\textbf{Imputed ML100K Dataset.}
+
+\textbf{Latent Factors Simulated Dataset.}
+
+\subsection{Baselines}
 
 \subsection{Results}
 
@@ -137,28 +162,7 @@ We designed experiments under simulated environments that verify the results int
 
 \section*{Acknowledgements}
 
-\bibliography{refs} 
-
-\section{Draft Area}
- (Consider using 2-dimensional Gaussian?)\\
-Assume the (flattened) ground truth ratings is a standard Gaussian with differential entropy
-\begin{align} \HH(R\sim N(0, 1))
-   & = \frac{1}{2}\log 2\pi e \\
-   & = 2.05
-\end{align}
-We can show that quantization (discretization) loses information. Consider
-a simple binary quantization that splits the ratings around the mean. Denote the quantized r.v. as $Q_1$.
-\[ \HH(Q_1) = -2 \cdot \frac{1}{2} \log \frac{1}{2} = 1 \]
-Consider another quantized r.v. $Q_2$ that divides the distribution four-fold based on the four quantiles.
-\[ \HH(Q_2) = -4 \cdot \frac{1}{4} \log \frac{1}{4} = 2 \]
-We can see that different quantization schemes loses different amount of information.
-\[ \HH(R) > \HH(Q_2) > \HH(Q_1) \]
-Next, we can prove that selection bias causes information loss. Assuming the selection bias causes ratings to have unequal probability to be sampled, and higher ratings are more likely to be sampled. The distribution of the observed ratings would then be right-skewed. We prove that, in the binary case, this reduces the information loss. Let $p$ be the probability that the sampled rating is positive.
-\[\HH = p\log p + (1-p) \log (1-p) \]
-\[ \frac{d\HH}{dp} = 1 + \log p + \frac{1-p}{p-1} - \log(1-p) = 0 \]
-which is optimized when $p = 0.5$. This result extends to all $n$-quantizations (can be proved using Lagrange multipliers.) See \url{http://pillowlab.princeton.edu/teaching/statneuro2018/slides/notes08_infotheory.pdf}.
-
-
+\bibliography{refs}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
