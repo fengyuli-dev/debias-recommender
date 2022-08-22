@@ -157,22 +157,22 @@ As a simple baseline, we adopt the standard matrix factorization that does not a
 
 \textbf{Naive Propensity Estimator.}
 The naive propensity estimator (NPE-MF) naively estimates the propensity scores from the already biased training data and plugs in the results to equation 1.
- 
+
 \subsection{Results}
 
 \begin{table}
   \caption{Test set RMSE and MAE for NBPE-MF and baselines}
   \label{sample-table}
   \centering
-  \begin{tabular}{lll}
-    \toprule
-    \multicolumn{2}{c}{Part}                   \\
-    \cmidrule(r){1-2}
-    Name     & Description     & Size ($\mu$m) \\
+  \begin{tabular}{lllll}
+    \toprule               
+            & \multicolumn{2}{c}{ML100K} & \multicolumn{2}{c}{Latent Factors}              \\
+    \cmidrule(r){2-5}
+            & RMSE                       & MAE                                & RMSE & MAE \\
     \midrule
-    Dendrite & Input terminal  & $\sim$100     \\
-    Axon     & Output terminal & $\sim$10      \\
-    Soma     & Cell body       & up to $10^6$  \\
+    MF      & 0                          & 0                                  & 0    & 0   \\ 
+    NPE-MF  & 0                          & 0                                  & 0    & 0   \\ 
+    NBPE-MF & 0                          & 0                                  & 0    & 0   \\ 
     \bottomrule
   \end{tabular}
 \end{table}
