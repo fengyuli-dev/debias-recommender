@@ -130,28 +130,38 @@ Since selection bias is uncontrollable in a dataset completely drawn from real-w
 Figure 2 shows our results on two dataset (see section 5) and 3 classic algorithms: user-KNN, item-KNN, and SVD matrix factorization. Although the RMSE grows consistently as $\beta$ increases for all datasets and algorithms, differently quantized datasets do not exhibit significantly different growth rates. We thus conclude it is a viable approach to use the more quantized, less biased dataset for propensity estimation.
 
 \section{Cross-Dataset Propensity Estimation}
+With the safety guarantee introduced above, we now turn to our cross-dataset matrix factorization model. Matrix factorization is a simple recommender model that decomposes the rating matrix based on known entries and then predicts the unknown entries\cite{koren2009matrix}. We integrate propensities as \cite{schnabel2016recommendations} did and formulated the recommendation problem as the empirical risk minimization framework below. 
+\begin{equation} \argmin_{V,W,A} \frac{1}{N}\left(\frac{(Y_{u,i}- (V_u^TW_i + A))^2}{P_{u,i}} \right) + c \Vert A \Vert^2
+\end{equation}
+where $A = \{ b_u, b_i, \mu \}$ represents the standard bias parameters (offset), $V$ and $W$ are the decomposed vectors, $\hat{Y} = V_u^TW_i + A$ is the predicted rating, $N$ is the number of ratings, and $c \Vert A \Vert^2$ is the regularizer. The inverse propensity scores $\nicefrac{1}{P_{u,i}}$ are multiplied to each rating during learning, which analogous to re-weighting ratings based on their biases.
 
-
-
-\[ \argmin_{V,W,A} \frac{1}{N}\left(\frac{(Y_{u,i}- (V_u^TW_i + A))^2}{P_{u,i}} \right) + c \Vert A \Vert^2\]
-where $A = \{ b_u, b_i, \mu \}$ represents the standard bias parameters (offset), $\hat{Y} = V_u^TW_i + A$ is the predicted rating, and $c \Vert A \Vert^2$ is the regularizer.
+Denote the less quantized dataset for training as $D$. We propose the \textbf{naive-bayes propensity estimator} from a more quantized (binary) dataset $D'$. Essentially,
+\begin{equation} 
+  P_{u,i} = \Pr(Y_{u,i} \text{ is observed} \mid ) = \frac{}{\text{}},
+\end{equation}
+where xxx. 
 
 \section{Experiment}
-We designed experiments under simulated environments that verify the results introduced above.
+We designed experiments to verify the performance of our cross-dataset model. We trained on two datasets and used two baseline algorithms for comparison. We selected the root mean square error (RMSE) and the mean absolute error (MAE) as the performance metrics.
 
 \subsection{Datasets}
-We used two datasets in our simulated environment:\\
-
 \textbf{Imputed ML100K Dataset.}
+The ML100K dataset provides 100 thousand MNAR ratings across 1683 movies rated by 944 users and is the standard large-scale dataset used for recommender systems. Since we need the ground truth ratings for controlling bias, we impute the missing ratings using standard matrix factorization. 
 
 \textbf{Latent Factors Simulated Dataset.}
+The latent factors dataset is a synthetic dataset that models real-world user behavior. Users and item both have random latent vectors to simulate preferences; both also have biases. The environment is provided by \cite{krauth2020offline}.
 
 \subsection{Baselines}
+\textbf{Matrix Factorization.}
+As a simple baseline, we adopt the standard matrix factorization that does not adopt propensity estimation or importance weighting.
 
+\textbf{Naive Propensity Estimator.}
+The naive propensity estimator (NPE-MF) naively estimates the propensity scores from the already biased training data and plugs in the results to equation 1.
+ 
 \subsection{Results}
 
 \begin{table}
-  \caption{Test set RMSE and MAE for MF-NBPE and baselines}
+  \caption{Test set RMSE and MAE for NBPE-MF and baselines}
   \label{sample-table}
   \centering
   \begin{tabular}{lll}
@@ -174,6 +184,5 @@ We used two datasets in our simulated environment:\\
 \bibliography{refs}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 \end{document}
