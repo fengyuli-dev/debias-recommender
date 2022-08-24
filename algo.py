@@ -4,12 +4,13 @@ from __future__ import (absolute_import, division, print_function,
 # import os
 # os.environ['KMP_DUPLICATE_LIB_OK']='True'
                         
-from data_utils import generate_ground_truth_matrix, ground_truth_matrix_to_dataset, to_dataframe, generate_test_dataframe, masked_nb_propensity_estimation, naive_propensity_estimation
+from data_utils import generate_ground_truth_matrix, ground_truth_matrix_to_dataset, to_dataframe, generate_test_dataframe, masked_nb_propensity_estimation, naive_propensity_estimation, mixing_mf_dataset
 import numpy as np
 from surprise import Reader
 from surprise import Dataset
 from surprise import accuracy
 from surprise.prediction_algorithms import AlgoBase
+from surprise.prediction_algorithms import SVD as surprise_SVD
 from surprise.prediction_algorithms import PredictionImpossible
 from surprise.utils import get_rng
 from copy import deepcopy
@@ -36,7 +37,6 @@ class SVD(AlgoBase):
         self.reg_pu = reg_pu if reg_pu is not None else reg_all
         self.reg_qi = reg_qi if reg_qi is not None else reg_all
         self.random_state = random_state
-        self.models = []
 
         AlgoBase.__init__(self)
 
@@ -45,10 +45,7 @@ class SVD(AlgoBase):
         AlgoBase.fit(self, trainset)
         self.sgd(trainset, verbose=verbose)
 
-        if not verbose:
-            return self
-        else:
-            return self, self.models
+        return self
 
     def sgd(self, trainset, verbose=False):
 
@@ -79,8 +76,8 @@ class SVD(AlgoBase):
             global_mean = 0
 
         for current_epoch in range(self.n_epochs):
-            # if self.verbose:
-            #     print("Processing epoch {}".format(current_epoch))
+            if verbose:
+                print("Processing epoch {}".format(current_epoch))
             for u, i, r in trainset.all_ratings():
 
                 # compute current error
@@ -105,9 +102,6 @@ class SVD(AlgoBase):
             self.bi = bi
             self.pu = pu
             self.qi = qi
-
-            if verbose:
-                self.models.append(deepcopy(self)) 
 
     def estimate(self, u, i):
         known_user = self.trainset.knows_user(u)
@@ -160,7 +154,6 @@ class PropensitySVD(AlgoBase):
         self.reg_qi = reg_qi if reg_qi is not None else reg_all
         self.random_state = random_state
         self.p = p
-        self.models = []
 
         AlgoBase.__init__(self)
 
@@ -169,10 +162,7 @@ class PropensitySVD(AlgoBase):
         AlgoBase.fit(self, trainset)
         self.sgd(trainset, verbose=verbose)
 
-        if not verbose:
-            return self
-        else:
-            return self, self.models
+        return self
 
     def sgd(self, trainset, verbose=False):
 
@@ -203,8 +193,8 @@ class PropensitySVD(AlgoBase):
             global_mean = 0
 
         for current_epoch in range(self.n_epochs):
-            # if self.verbose:
-            #     print("Processing epoch {}".format(current_epoch))
+            if verbose:
+                print("Processing epoch {}".format(current_epoch))
             for u, i, r in trainset.all_ratings():
 
                 # compute current error
@@ -228,10 +218,7 @@ class PropensitySVD(AlgoBase):
             self.bu = bu
             self.bi = bi
             self.pu = pu
-            self.qi = qi
-
-            if verbose:
-                self.models.append(deepcopy(self))        
+            self.qi = qi  
 
     def estimate(self, u, i):
         known_user = self.trainset.knows_user(u)
@@ -262,32 +249,50 @@ class PropensitySVD(AlgoBase):
 if __name__ == '__main__':
     truth = generate_ground_truth_matrix(
         (1000, 1000), environment='ml-100k-v1')
-    users, items, ratings, P, R, R_no_noise = ground_truth_matrix_to_dataset(
-        truth, quantization='onetofive', bias='full underlying', beta=1)
+    # users, items, ratings, P, R, R_no_noise = ground_truth_matrix_to_dataset(
+    #     truth, quantization='onetofive', bias='full underlying', beta=1)
+    users, items, ratings, P, R, R_no_noise = mixing_mf_dataset(
+    truth, quantization='onetofive', bias='full underlying', beta=1)
     df = to_dataframe(ratings)
     reader = Reader(rating_scale=(0, 1))
     data = Dataset.load_from_df(
         df[['userID', 'itemID', 'rating']], reader)
     trainset = data.build_full_trainset()
-    p = masked_nb_propensity_estimation(truth, ratings, P.shape, beta=0.5)
-    p_naive = naive_propensity_estimation(ratings, P.shape)
-    algo_better = PropensitySVD(p, n_epochs=5)
-    algo = PropensitySVD(p_naive, n_epochs=5)
-    algo_worst = SVD(n_epochs=5)
-    _, algo_better_track = algo_better.fit(trainset, verbose=True)
-    _, algo_track = algo.fit(trainset, verbose=True)
-    _, algo_worst_track = algo_worst.fit(trainset, verbose=True)
-    test_df = generate_test_dataframe(R_no_noise)
-    testset = Dataset.load_from_df(
-        test_df[['userID', 'itemID', 'rating']], reader).build_full_trainset().build_testset()
 
-    predictions = algo_better.test(testset)
-    print(accuracy.rmse(predictions))
+    experiment = 2
 
-    predictions = algo.test(testset)
-    print(accuracy.rmse(predictions))
+    if experiment == 1:
+        p = masked_nb_propensity_estimation(truth, ratings, P.shape)
+        p_naive = naive_propensity_estimation(ratings, P.shape)
+        algo_better = PropensitySVD(p, n_epochs=10)
+        algo = PropensitySVD(p_naive, n_epochs=10)
+        algo_worst = SVD(n_epochs=10)
+        algo_better.fit(trainset, verbose=True)
+        algo.fit(trainset, verbose=True)
+        algo_worst.fit(trainset, verbose=True)
+        test_df = generate_test_dataframe(R_no_noise)
+        testset = Dataset.load_from_df(
+            test_df[['userID', 'itemID', 'rating']], reader).build_full_trainset().build_testset()
 
-    predictions = algo_worst.test(testset)
-    print(accuracy.rmse(predictions))
+        predictions = algo_better.test(testset)
+        print(accuracy.rmse(predictions))
+        print(accuracy.mae(predictions))
 
-    print(algo_better_track)
+        predictions = algo.test(testset)
+        print(accuracy.rmse(predictions))
+        print(accuracy.mae(predictions))
+
+        predictions = algo_worst.test(testset)
+        print(accuracy.rmse(predictions))
+        print(accuracy.mae(predictions))
+
+    elif experiment == 2:
+        algo = surprise_SVD(n_epochs=10, verbose=True)    
+        algo.fit(trainset)
+        test_df = generate_test_dataframe(R_no_noise)
+        testset = Dataset.load_from_df(
+            test_df[['userID', 'itemID', 'rating']], reader).build_full_trainset().build_testset()
+        predictions = algo.test(testset)
+        print(accuracy.rmse(predictions))
+        print(accuracy.mae(predictions))    
+        

@@ -145,6 +145,129 @@ def ground_truth_matrix_to_dataset(matrix, quantization, sample_prob=0.1, bias=N
         raise ValueError('Bias method not supported.')
 
 
+def mixing_mf_dataset(matrix, quantization, sample_prob=0.1, bias=None, beta=1, noise=0.05):
+    # Bias must be 'popularity', quantization must be 'onetofive'
+    m, n = matrix.shape
+    np.random.shuffle(matrix)
+    R = matrix.copy()
+
+    # Normalize the ground truth and add Gaussian noise
+    R_no_noise = (R - R.min()) / (R.max() - R.min())
+    R = R_no_noise + np.random.normal(0, noise, R.shape)
+    R[R > 1] = 1
+    R[R <= 0] = 1e-7
+    R_no_noise[R_no_noise <= 0] = 1e-7
+
+    # Quantize the matrix
+    if quantization == 'binary':
+        bins = np.linspace(0, 1, 3)
+        indexes = np.digitize(R, bins)
+        indexes_no_noise = np.digitize(R_no_noise, bins, right=True)
+        bins = np.append(bins, 1)
+        for i in range(m):
+            for j in range(n):
+                R[i][j] = bins[indexes[i][j]]
+                R_no_noise[i][j] = bins[indexes_no_noise[i][j]]
+    elif quantization == 'onetofive':
+        bins = np.linspace(0, 1, 6)
+        indexes = np.digitize(R, bins)
+        indexes_no_noise = np.digitize(R_no_noise, bins, right=True)
+        bins = np.append(bins, 1)
+        for i in range(m):
+            for j in range(n):
+                R[i][j] = bins[indexes[i][j]]
+                R_no_noise[i][j] = bins[indexes_no_noise[i][j]]
+    elif quantization == 'onetothree':
+        bins = np.linspace(0, 1, 4)
+        indexes = np.digitize(R, bins)
+        indexes_no_noise = np.digitize(R_no_noise, bins, right=True)
+        bins = np.append(bins, 1)
+        for i in range(m):
+            for j in range(n):
+                R[i][j] = bins[indexes[i][j]]
+                R_no_noise[i][j] = bins[indexes_no_noise[i][j]]
+    elif quantization == 'onetoten':
+        bins = np.linspace(0, 1, 11)
+        indexes = np.digitize(R, bins)
+        indexes_no_noise = np.digitize(R_no_noise, bins, right=True)
+        bins = np.append(bins, 1)
+        for i in range(m):
+            for j in range(n):
+                R[i][j] = bins[indexes[i][j]]
+                R_no_noise[i][j] = bins[indexes_no_noise[i][j]]
+    else:
+        raise ValueError('Quantization scale not supported.')
+
+    if bias is None or beta == 0:
+        ratings = {}
+        for i in range(m):
+            for j in range(n):
+                ratings[(i, j)] = sample(R[i, j], sample_prob)
+        users, items = generate_users_items(ratings, m, n)
+        P = np.ones(matrix.shape) * sample_prob
+        return users, items, ratings, P, R, R_no_noise
+
+    elif bias == 'popularity':
+        average_ratings = np.mean(matrix, axis=0)
+        exps = np.exp(beta * average_ratings)
+        softmax_result = exps / np.sum(exps)
+        # Scale mean to sample_prob
+        softmax_result /= np.mean(softmax_result)
+        softmax_result *= sample_prob
+        P = np.tile(softmax_result, (m, 1))
+        assert abs(P.mean()) - sample_prob < EPSILON
+        assert P.shape == matrix.shape
+
+        ratings = {}
+        for i in range(m):
+            for j in range(n):
+                ratings[(i, j)] = sample(R[i, j], P[i, j])
+        users, items = generate_users_items(ratings, m, n)
+
+        # HERE!
+        for i in range(m):
+            for j in range(n):
+                if R[m][n] is None:
+                    R[m][n] = 0.2 if matrix[m][n] <= 0.5 else 1
+                    ratings[(m, n)] = R[m][n]
+        return users, items, ratings, P, R, R_no_noise
+
+    elif bias == 'active user':
+        average_ratings = np.mean(matrix, axis=1)
+        exps = np.exp(beta * average_ratings)
+        softmax_result = exps / np.sum(exps)
+        # Scale mean to sample_prob
+        softmax_result /= np.mean(softmax_result)
+        softmax_result *= sample_prob
+        P = np.tile(softmax_result.reshape(1, m), (n, 1))
+        assert abs(P.mean()) - sample_prob < EPSILON
+        assert P.shape == matrix.shape
+
+        ratings = {}
+        for i in range(m):
+            for j in range(n):
+                ratings[(i, j)] = sample(R[i, j], P[i, j])
+        users, items = generate_users_items(ratings, m, n)
+        return users, items, ratings, P, R, R_no_noise
+
+    elif bias == 'full underlying':
+        P = np.exp(beta * matrix)
+        P /= np.sum(P)
+        P /= np.mean(P)
+        P *= sample_prob
+        assert abs(P.mean()) - sample_prob < EPSILON
+
+        ratings = {}
+        for i in range(m):
+            for j in range(n):
+                ratings[(i, j)] = sample(R[i, j], P[i, j])
+        users, items = generate_users_items(ratings, m, n)
+        return users, items, ratings, P, R, R_no_noise
+
+    else:
+        raise ValueError('Bias method not supported.')
+
+
 def generate_users_items(ratings, m, n):
     """
     Helper function that takes as input a dictionary of ratings and outputs two dictionaries of users and items.

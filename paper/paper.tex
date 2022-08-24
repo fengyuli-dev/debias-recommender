@@ -146,7 +146,7 @@ We designed experiments to verify the performance of our cross-dataset model. We
 
 \subsection{Datasets}
 \textbf{Imputed ML100K Dataset.}
-The ML100K dataset provides 100 thousand MNAR ratings across 1683 movies rated by 944 users and is the standard large-scale dataset used for recommender systems. Since we need the ground truth ratings for controlling bias, we impute the missing ratings using standard matrix factorization. 
+The ML100K dataset provides 100 thousand MNAR ratings across 1683 movies rated by 944 users and is the standard large-scale dataset used for recommender systems. Since we need the ground truth ratings for controlling bias, we impute the missing ratings using standard matrix factorization. Ratings are normalized between 0 and 1 for consistency with the other dataset. 
 
 \textbf{Latent Factors Simulated Dataset.}
 The latent factors dataset is a synthetic dataset that models real-world user behavior. Users and item both have random latent vectors to simulate preferences; both also have biases. The environment is provided by \cite{krauth2020offline}.
@@ -159,7 +159,7 @@ As a simple baseline, we adopt the standard matrix factorization that does not a
 The naive propensity estimator (NPE-MF) naively estimates the propensity scores from the already biased training data and plugs in the results to equation 1.
 
 \textbf{Mixing Datasets MF.}
-Pending
+To analyze whether our cross-dataset model more efficiently exploits all existing data, we create a larger dataset by mixing the two differently quantized datasets and train the MF algorithm on it.
 
 \subsection{Results}
 
@@ -169,14 +169,14 @@ Pending
   \centering
   \begin{tabular}{lllll}
     \toprule               
-            & \multicolumn{2}{c}{ML100K} & \multicolumn{2}{c}{Latent Factors}              \\
+                     & \multicolumn{2}{c}{ML100K} & \multicolumn{2}{c}{Latent Factors}                                     \\
     \cmidrule(r){2-5}
-            & RMSE                       & MAE                                & RMSE & MAE \\
+                     & RMSE                       & MAE                                & RMSE            & MAE             \\
     \midrule
-    MF      & 0                          & 0                                  & 0    & 0   \\ 
-    NPE-MF  & 0                          & 0                                  & 0    & 0   \\ 
-    NBPE-MF & 0                          & 0                                  & 0    & 0   \\ 
-    MD-MF   & 0                          & 0                                  & 0    & 0   \\
+    MF               & 0.1046                     & 0.0833                             & 0.1331          & 0.1045          \\ 
+    NPE-MF           & 0.1048                     & 0.0834                             & 0.132           & 0.1049          \\ 
+    MD-MF            & 0.1044                     & 0.083                              & 0.1299          & 0.1027          \\
+    \textbf{NBPE-MF} & \textbf{0.076}             & \textbf{0.062}                     & \textbf{0.1065} & \textbf{0.0841} \\ 
     \bottomrule
   \end{tabular}
 \end{table}
