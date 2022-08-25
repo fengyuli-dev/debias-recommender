@@ -135,14 +135,18 @@ With the safety guarantee introduced above, we now turn to our cross-dataset mat
 \end{equation}
 where $A = \{ b_u, b_i, \mu \}$ represents the standard bias parameters (offset), $V$ and $W$ are the decomposed vectors, $\hat{Y} = V_u^TW_i + A$ is the predicted rating, $N$ is the number of ratings, and $c \Vert A \Vert^2$ is the regularizer. The inverse propensity scores $\nicefrac{1}{P_{u,i}}$ are multiplied to each rating during learning, which analogous to re-weighting ratings based on their biases.
 
-Denote the biased training set as $D$. we propose the \textbf{naive-bayes propensity estimator} from a more quantized (binary) dataset $D'$. Essentially,
+Denote the biased training set as $D$. we propose the \textbf{naive-bayes propensity estimator} (NBPE-MF) from a more quantized (binary) dataset $D'$. Essentially,
 \begin{equation} 
   P_{u,i} = \Pr(Y_{u,i} \text{ is observed} \mid Y_{u,i} = r_{u,i}) = \frac{\Pr(Y_{u,i} = r_{u,i} \mid Y_{u,i} \text{ is observed})}{\Pr(Y_{u,i}) = r_{u,i}},
 \end{equation}
-where the numerator can be easily approximated from the dataset, but the denominator requires additional data from less biased sources. In this paper, we estimates the denominator from the unbiased, more quantized dataset using a categorical naive-bayes model. We use $D'$ as a mask to hide biased ratings in the training set from propensity estimation. In other words, $Y_{u,i} \text{ is considered observed}$ only when $D'_{u,i} \text{ is observed}$. If the corresponding rating is not captured in $D'$, we set its propensity to the average propensity. 
+where the numerator can be easily approximated from the dataset, but the denominator requires additional data from less biased sources. In this paper, we estimates the denominator from the unbiased, more quantized dataset using a categorical naive-bayes model. We use $D'$ as a mask to hide biased ratings in the training set from propensity estimation. In other words, $Y_{u,i} \text{ is considered observed}$ only when $D'_{u,i} \text{ is observed}$. 
+\begin{equation} 
+  NB equation here.
+\end{equation}
+If the corresponding rating is not captured in $D'$, we set its propensity to the average propensity. 
 
 \section{Experiment}
-We designed experiments to verify the performance of our cross-dataset model. We trained on two datasets and used two baseline algorithms for comparison. We selected the root mean square error (RMSE) and the mean absolute error (MAE) as the performance metrics.
+We designed experiments to verify the performance of our cross-dataset model. We trained on two datasets with $\beta =1$ in training set and used two baseline algorithms for comparison. We selected the root mean square error (RMSE) and the mean absolute error (MAE) as the performance metrics. 
 
 \subsection{Datasets}
 \textbf{Imputed ML100K Dataset.}
@@ -152,18 +156,23 @@ The ML100K dataset provides 100 thousand MNAR ratings across 1683 movies rated b
 The latent factors dataset is a synthetic dataset that models real-world user behavior. Users and item both have random latent vectors to simulate preferences; both also have biases. The environment is provided by \cite{krauth2020offline}.
 
 \subsection{Baselines}
-\textbf{Matrix Factorization.}
+\textbf{Matrix Factorization (MF.)}
 As a simple baseline, we adopt the standard matrix factorization that does not adopt propensity estimation or importance weighting.
 
-\textbf{Naive Propensity Estimator.}
-The naive propensity estimator (NPE-MF) naively estimates the propensity scores from the already biased training data and plugs in the results to equation 1.
+\textbf{Naive Propensity Estimator (NPE-MF.)}
+The naive propensity estimator naively estimates the propensity scores from the already biased training data and plugs in the results to equation 1.
 
-\textbf{Mixing Datasets MF.}
+\textbf{Mixing Datasets Matrix Factorization (MD-MF.)}
 To analyze whether our cross-dataset model more efficiently exploits all existing data, we create a larger dataset by mixing the two differently quantized datasets and train the MF algorithm on it.
 
 \subsection{Results}
+Table 1 shows the the experiment's results, each entry as the average of five independent trials. Averaged across datasets and metrics, our approach gains 23.1\% reduction in error compared to matrix factorization, 23.1\% compared to naive propensity estimator, and 22.1\% compared to mixing datasets matrix factorization. 
 
-\begin{table}
+Additionally, we observe that NPE-MF and MF have very similar performance across all settings. This suggests that a IPS-based model will not gain any performance boost if propensities are inaccurately estimated. Furthermore, we argue that our model is data-efficient, i.e., it beats the competitor model (MD-MF), demonstrating that utilizing less biased dataset for propensity estimation is a more viable approach than mixing it with other data, though the latter is sometimes a common engineering practice. On our benchmarks, mixing datasets MF achieves less than 2\% advantage compared to using only one dataset.
+
+We conclude that our cross-dataset model significantly outperforms baselines and provides a efficient way to make use of more quantized (implicit) data. 
+
+\begin{table}0
   \caption{Test set RMSE and MAE for NBPE-MF and baselines}
   \label{sample-table}
   \centering
