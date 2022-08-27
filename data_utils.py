@@ -228,7 +228,7 @@ def mixing_mf_dataset(matrix, quantization, sample_prob=0.1, bias=None, beta=1, 
         for i in range(m):
             for j in range(n):
                 if R[m][n] is None:
-                    R[m][n] = 0.2 if matrix[m][n] <= 0.5 else 1
+                    R[m][n] = 0.4 if matrix[m][n] <= 0.5 else 0.8
                     ratings[(m, n)] = R[m][n]
         return users, items, ratings, P, R, R_no_noise
 
@@ -404,8 +404,20 @@ def masked_nb_propensity_estimation(truth, ratings, shape, beta=0):
     numerator = numerator * count / size
 
     _, _, ratings_less_biased, P, R, R_no_noise = ground_truth_matrix_to_dataset(
-        truth, quantization='binary', bias='full underlying', beta=beta, sample_prob=1)
+        truth, quantization='binary', bias='full underlying', beta=beta, sample_prob=0.1)
     ratings_copy = deepcopy(ratings)
+    
+    # n0 = 0 
+    # n1 = 1
+    # for v in ratings_less_biased.values():
+    #     if v = 0.5:
+    #         n0 += 1
+    #     elif v == 1:
+    #         n1 += 1
+    #     elif v is not None:
+    #         print(v)
+    # print(n0)
+    # print(n1)                
 
     for key, value in ratings.items():
         if value is not None and ratings_less_biased[key] is None:

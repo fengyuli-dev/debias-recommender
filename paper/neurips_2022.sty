@@ -18,7 +18,7 @@
 % last revision: March 2022
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{neurips_2022}[2022/03/31 NeurIPS 2022 submission/camera-ready style file]
+\ProvidesPackage{neurips_2022}[2022/03/31 DistShift NeurIPS 2022 submission/camera-ready style file]
 
 % declare final option, which creates camera-ready copy
 \newif\if@neuripsfinal\@neuripsfinalfalse
@@ -331,7 +331,7 @@
 \else
   \if@neuripsfinal
     \newcommand{\@noticestring}{%
-      \@neuripsordinal\/ Conference on Neural Information Processing Systems
+      Workshop on Distribution Shifts, \@neuripsordinal\/ Conference on Neural Information Processing Systems
       (NeurIPS \@neuripsyear).%, \@neuripslocation.%
     }
   \else

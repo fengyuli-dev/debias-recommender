@@ -262,14 +262,14 @@ if __name__ == '__main__':
     experiment = 2
 
     if experiment == 1:
-        p = masked_nb_propensity_estimation(truth, ratings, P.shape)
+        p = masked_nb_propensity_estimation(truth, ratings, P.shape, beta=3)
         p_naive = naive_propensity_estimation(ratings, P.shape)
         algo_better = PropensitySVD(p, n_epochs=10)
         algo = PropensitySVD(p_naive, n_epochs=10)
         algo_worst = SVD(n_epochs=10)
         algo_better.fit(trainset, verbose=True)
-        algo.fit(trainset, verbose=True)
-        algo_worst.fit(trainset, verbose=True)
+        # algo.fit(trainset, verbose=True)
+        # algo_worst.fit(trainset, verbose=True)
         test_df = generate_test_dataframe(R_no_noise)
         testset = Dataset.load_from_df(
             test_df[['userID', 'itemID', 'rating']], reader).build_full_trainset().build_testset()
@@ -278,13 +278,13 @@ if __name__ == '__main__':
         print(accuracy.rmse(predictions))
         print(accuracy.mae(predictions))
 
-        predictions = algo.test(testset)
-        print(accuracy.rmse(predictions))
-        print(accuracy.mae(predictions))
+        # predictions = algo.test(testset)
+        # print(accuracy.rmse(predictions))
+        # print(accuracy.mae(predictions))
 
-        predictions = algo_worst.test(testset)
-        print(accuracy.rmse(predictions))
-        print(accuracy.mae(predictions))
+        # predictions = algo_worst.test(testset)
+        # print(accuracy.rmse(predictions))
+        # print(accuracy.mae(predictions))
 
     elif experiment == 2:
         algo = surprise_SVD(n_epochs=10, verbose=True)    
