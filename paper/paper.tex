@@ -83,37 +83,44 @@
 
 
 \begin{abstract}
-  Datasets for training recommender systems are often subject to severe distribution shift induced by users' selection biases. In this paper, we study the impact of selection bias on datasets with different quantization. We then leverage two differently quantized datasets from different source distributions to improve propensity estimation for the inverse probability scoring method from causal inference. Empirically, our approach gains significant performance improvement over single-dataset methods and alternative ways of combining two datasets. 
+  Datasets for training recommender systems are often subject to distribution shift induced by users' and recommenders' selection biases. In this paper, we study the impact of selection bias on datasets with different quantization. We then leverage two differently quantized datasets from different source distributions to mitigate distribution shift by applying the inverse probability scoring method from causal inference. Empirically, our approach gains significant performance improvement over single-dataset methods and alternative ways of combining two datasets. 
 \end{abstract}
 
 \section{Introduction}
 Selection bias is one of the most prevalent sources of biases for recommender systems \cite{chen2020bias}. Selection bias happens when there is a pattern in the users' ratings that is unique to the training set. For example, in a recommender system for movies, users might mainly rate movies that are recommended to them, which is a small section of movies already tailored to the users' tastes \cite{pradel2012ranking}. However, the environment the recommender system is deployed on contains all candidates movies, which is not biased toward personal tastes. This discrepancy produces a misalignment between training and deployed settings, which is known as a distribution shift. Tackling the selection bias in a recommender dataset has been a constant challenge in designing recommender algorithms \cite{schnabel2016recommendations}.
 
-When recommender systems are deployed in real-world platforms, clients are usually able to collect preference-associated data from different source distributions. These data, or feedbacks, are either implicit or explicit \cite{aggarwal2016recommender}, highly-quantized (e.g. binary) or less quantized (e.g. one to five stars.) However, state-of-the-art recommender systems tend to only train on one dataset, which is often less quantized. We hypothesize that combing more than one datasets with different degrees of bias in the training procedure would make the model more robust against selection bias.
+When recommender systems are deployed in real-world platforms, clients are usually able to collect preference-associated data from different source distributions. These data, or feedbacks, are either implicit or explicit \cite{aggarwal2016recommender}, highly-quantized (e.g. binary) or less quantized (e.g. one to five stars.) However, state-of-the-art recommender algorithms tend to focus on one dataset. We hypothesize that combing more than one datasets with different degrees of bias in the training procedure would make the model more robust against selection bias.
 
 In this paper, we attempt to take advantage of datasets from differently biased sources with different quantization. More specifically, we propose a way to feed both a highly quantized and a less quantized dataset to a gradient-based recommender algorithm, given the assumption that the highly quantized dataset contains less bias. Practically, this assumption stands true under many settings. Being less biased toward personal taste has been an important reason that implicit dataset, which is often more quantized, is adopted for modeling \cite{amatriain2009like} \cite{jawaheer2010comparison}.
 
-To ensure both datasets do not significantly lose their values in the presence of selection bias, we first examine the susceptibility to selection bias of differently quantized datasets from a source distribution. We design experiments under a simulated environment and shows that susceptibility to selection bias is not correlated with the way a dataset is quantized. 
+To ensure both datasets do not significantly lose their values in the presence of selection bias, we first examine the susceptibility to selection bias of differently quantized datasets from a source distribution. Our experiment shows that susceptibility to selection bias is not correlated with the way a dataset is quantized. 
 
-Then, since a less-quantized dataset inherently contains more information than a more-quantized dataset \cite{widrow1996statistical} and thus is more suitable for training the model, we decide to use it as the training data of matrix factorization and use the more quantized dataset for propensity scoring and deriving the inverse-probability-scoring (IPS) estimator \cite{thompson2012sampling} \cite{imbens2015causal}, a causal inference approach applicable to matrix completion-based recommender algorithms. In this way, our cross-dataset learning framework empowers existing recommender algorithms by using previously neglected, highly quantized dataset. We carried out experiment and found our method outperforming baselines by a significant margin.
+Then, since a less-quantized dataset inherently contains more information than a more-quantized dataset \cite{widrow1996statistical}, we decide to use it as the training set of matrix factorization and use the more quantized dataset for deriving the inverse-probability-scoring (IPS) propensity estimator \cite{thompson2012sampling} \cite{imbens2015causal}, a causal inference approach applicable to matrix completion-based recommender algorithms. In this way, our cross-dataset learning framework empowers existing recommender algorithms by empowering highly quantized dataset. We carried out experiment and found our method outperforming baselines by a significant margin.
 
 % Quantization is a practical way to categorize an input from a continuous distribution to a discrete set of bins. We assume the ground truth of a user's rating is a continuous distribution over items because of the inherent impossibility of numerically expressing the feeling of enjoyment and excitement. We treat a recommender dataset as a noised quantization of the ground truth. In other words, users convert their feelings into one of the discrete choices when they rate an item. Recommender datasets are quantized into different degrees. For example, a typical movie rating dataset uses a 5-quantization. A tinder like/dislike dataset uses a 2-quantization.
 
 \section{Related Work}
 Prior works on overcoming selection bias-induced distribution shift via a propensity-based approach begins with the seminal paper \cite{schnabel2016recommendations}, which introduces the IPS method into recommender systems. Follow-up works aim at providing a learning-based or behavioral model of user feedbacks for propensity estimation \cite{joachims2017unbiased} \cite{yang2018unbiased}, which remains the central concern of this approach. While many works rely on a propensity matrix that is assumed to be known, e.g. \cite{something}, our work provides an idea of using a more quantized, implicit dataset for accurate propensity estimation.
 
-The IPS method in our context is, essentially, a method of weighting training examples to correct the bias in the training data. Equivalent approaches such as importance weighting are widely used for domain adaptation in fields other than recommender systems \cite{sugiyama2007covariate} \cite{zhang2018importance}. Discussions on the IPS-based domain adaptation for countering selection bias, which is most relevant to recommender systems, remain limited.
+The IPS method in our context is, essentially, a method of weighting training examples to correct the bias in the training data. Equivalent approaches such as importance weighting are widely used for domain adaptation in fields other than recommender systems \cite{sugiyama2007covariate} \cite{zhang2018importance}. Discussions on the IPS-based domain adaptation for countering selection bias, which is most relevant to recommender systems, remain limited due to the hardness of evaluating propensities.
 
 \section{Susceptibility to Selection Bias}
 We first examine the susceptibility to selection bias of differently quantized data by manually introducing biased distributions of various degrees to the differently quantized training sets. It is crucial for us that the highly quantized dataset does not exhibit particular weakness when facing selection bias so that they can be properly adopted for propensity estimation.
 
 \subsection{Simulated Environment for Controlling Bias}
-Since selection bias is uncontrollable in a dataset completely drawn from real-world, we have to adopt a simulated environment \cite{krauth2020offline} with both semi-synthetic and synthetic datasets, which shall be explained in section 5. In our environment, we propose the \textbf{softmax observation model} and introduce a hyperparameter $\beta$ to control the degree of bias. For a rating matrix $R$, the corresponding probability matrix of each rating being observed is $\Pr(R_{u,i}\text{ is observed}) = k\text{softmax}(\beta R_{u,i})$, where $k$ is pre-set so that the expected proportion of observed ratings is controlled. The effect of $\beta$ on probability of being observed for different ratings is visualized in figure 1. In our experiment we assume constantly $10\%$ of ratings are observed among $1000$ users and $1000$ items.
-\begin{figure}
-  \centering
-  \includegraphics[width=\textwidth]{visualize.png}
-  \caption{Visualizing the effect of controlling bias}
-\end{figure}
+Since selection bias is uncontrollable in a dataset completely drawn from real-world, we have to adopt a simulated environment \cite{krauth2020offline} with both semi-synthetic and synthetic datasets explained below. In our environment, we propose the \textbf{softmax observation model} and introduce a hyperparameter $\beta$ to control the degree of bias. For a rating matrix $R$, the corresponding probability matrix of each rating being observed is $\Pr(R_{u,i}\text{ is observed}) = k\text{softmax}(\beta R_{u,i})$, where $k$ is pre-set so that the expected proportion of observed ratings is controlled. In this observation model, a larger $\beta$ induces more significant bias at an exponential rate. In our experiment we assume constantly $10\%$ of ratings are observed among $1000$ users and $1000$ items.
+% \begin{figure}
+%   \centering
+%   \includegraphics[width=\textwidth]{visualize.png}
+%   \caption{Visualizing the effect of controlling bias}
+% \end{figure}
+
+\subsection{Datasets}
+\textbf{Imputed ML100K Dataset.}
+The ML100K dataset provides 100 thousand MNAR ratings across 1683 movies rated by 944 users and is the standard large-scale dataset used for recommender systems. Since we need the ground truth ratings for controlling bias, we impute the missing ratings using standard matrix factorization \cite{krauth2020offline}. Ratings are normalized between 0 and 1 for consistency with the other dataset. 
+
+\textbf{Latent Factors Simulated Dataset.}
+The latent factors dataset is a synthetic dataset that models real-world user behavior. Users and item both have Gaussian latent vectors to simulate preferences \cite{koren2008factorization} \cite{koren2009matrix}; both also have biases. The environment is provided by \cite{krauth2020offline}.
 
 \subsection{Results}
 \begin{figure}
@@ -121,13 +128,13 @@ Since selection bias is uncontrollable in a dataset completely drawn from real-w
   \includegraphics[width=\textwidth]{1.png}
   \caption{The effect of selection bias is not affected by quantization}
 \end{figure}
-Figure 2 shows our results on a synthetic dataset (see section 5) and 3 classic algorithms: user-KNN, item-KNN, and SVD matrix factorization. The three differently quantized variants come from the same source distribution (the dataset). Gaussian noise is introduced for simulating real-world user noise. Shaded regions denote the regions between quartiles. 
+Figure 1 shows our results on the latent factors dataset with 3 classic algorithms: user-KNN, item-KNN, and SVD matrix factorization. The three differently quantized variants come from the same source distribution (the dataset). Gaussian noise is introduced for simulating real-world user noise. Shaded regions denote the regions between quartiles. 
 
-Although the RMSE grows consistently as $\beta$ increases for algorithms, differently quantized datasets do not exhibit significantly different growth rates. The discrepancy between the RMSE of differently quantized datasets with the same $\beta$ can be ascribed to the inherent information loss from high quantization \cite{widrow1996statistical}. We thus conclude it is a viable approach to use the more quantized, less biased dataset for propensity estimation. Furthermore, figure 2. visualizes the damaging effect of selection bias. The less quantized datasets breaks even with the most coarse binary dataset at $\beta=2.5$ versus $\beta=0$, suggesting the practical importance of debiasing recommender systems. The above experiments are repeated under a semi-synthetic environment and the conclusion holds.
+Although the RMSE grows consistently as $\beta$ increases, differently quantized datasets do not exhibit significantly different growth rates. The discrepancy between the RMSE of differently quantized datasets with the same $\beta$ can be ascribed to the inherent information loss from quantization \cite{widrow1996statistical}. We reason that since the effect of bias on rating predictions is consistent across quantizations, the subsequent effect on propensity estimation should be identical as accurate propensity estimation follows accurate rating predictions. Therefore, differently quantized datasets should also be equally susceptible to selection bias when used for propensity scoring. We thus conclude it is a viable approach to use the more quantized, less biased dataset for propensity estimation. Furthermore, figure 1. visualizes the damaging effect of selection bias. The less quantized datasets breaks even with the most coarse binary dataset at $\beta=2.5$ versus $\beta=0$, suggesting the practical importance of debiasing recommender systems. The above experiments are repeated under a semi-synthetic environment and the conclusion holds.
 
 
 \section{Cross-Dataset Propensity Estimation}
-With the above safety guarantee, we now turn to our cross-dataset matrix factorization model. Matrix factorization is a simple recommender model that decomposes the rating matrix based on known entries and then predicts the unknown entries \cite{koren2009matrix}. We integrate propensities as \cite{schnabel2016recommendations} did and formulated the recommendation problem as the empirical risk minimization framework below. 
+With the above guarantee, we now turn to our cross-dataset matrix factorization model. Matrix factorization is a simple recommender model that decomposes the rating matrix based on known entries and then predicts the unknown entries \cite{koren2009matrix}. We integrate propensities as in \citep{schnabel2016recommendations} and formulated the recommendation problem as the empirical risk minimization framework below. 
 \begin{equation} \argmin_{V,W,A} \frac{1}{N}\left(\frac{(Y_{u,i}- (V_u^TW_i + A))^2}{P_{u,i}} \right) + c \Vert A \Vert^2
 \end{equation}
 where $A = \{ b_u, b_i, \mu \}$ represents the standard bias parameters (offset), $V$ and $W$ are the decomposed vectors, $\hat{Y} = V_u^TW_i + A$ is the predicted rating, $N$ is the number of ratings, and $c \Vert A \Vert^2$ is the regularizer. The inverse propensity scores $\nicefrac{1}{P_{u,i}}$ are multiplied to each rating during learning, which is analogous to re-weighting ratings based on their biases.
@@ -145,13 +152,6 @@ If the corresponding rating is not captured in $D'$, we set its propensity to th
 \section{Experiment}
 We designed experiments to verify the performance of our cross-dataset model. We trained on two datasets with $\beta =1$ in training set and used three baseline algorithms for comparison. In this paper we assumed the highly quantized dataset is unbiased with $\beta=0$, which is probable when the implicit dataset reflects users' spontaneous choices. Theoretically, our framework will work as long as the highly quantized dataset is less biased. We selected the root mean square error (RMSE) and the mean absolute error (MAE) as performance metrics. 
 
-\subsection{Datasets}
-\textbf{Imputed ML100K Dataset.}
-The ML100K dataset provides 100 thousand MNAR ratings across 1683 movies rated by 944 users and is the standard large-scale dataset used for recommender systems. Since we need the ground truth ratings for controlling bias, we impute the missing ratings using standard matrix factorization. Ratings are normalized between 0 and 1 for consistency with the other dataset. 
-
-\textbf{Latent Factors Simulated Dataset.}
-The latent factors dataset is a synthetic dataset that models real-world user behavior. Users and item both have random latent vectors to simulate preferences; both also have biases. The environment is provided by \cite{krauth2020offline}.
-
 \subsection{Baselines}
 \textbf{Matrix Factorization (MF.)}
 As a simple baseline, we adopt the standard matrix factorization that does not adopt propensity estimation or importance weighting.
@@ -160,7 +160,7 @@ As a simple baseline, we adopt the standard matrix factorization that does not a
 The naive propensity estimator naively estimates the propensity scores from the already biased training data and plugs in the results to equation 1.
 
 \textbf{Mixing Datasets Matrix Factorization (MD-MF.)}
-To analyze whether our cross-dataset model more efficiently exploits all existing data, we create a larger dataset by mixing the two differently quantized datasets and train the MF algorithm on it.
+To analyze whether our cross-dataset model more efficiently exploits all existing data, we create a larger dataset by mixing the two differently quantized datasets and train the MF algorithm on it. To do this, we tried multiple schemes to upscale the more quantized dataset to be less quantized and found that this has minimal influence on the results.
 
 \subsection{Results}
 Table 1 shows the the experiment's results, each entry as the average of five independent trials. Averaged across datasets and metrics, our approach gains $23.1\%$ reduction in error compared to matrix factorization, $23.1\%$ compared to naive propensity estimator, and $22.1\%$ compared to mixing datasets matrix factorization. 
@@ -182,13 +182,13 @@ We conclude that our cross-dataset model significantly outperforms baselines and
     MF               & 0.1046                     & 0.0833                             & 0.1331          & 0.1045          \\ 
     NPE-MF           & 0.1048                     & 0.0834                             & 0.132           & 0.1049          \\ 
     MD-MF            & 0.1044                     & 0.083                              & 0.1299          & 0.1027          \\
-    \textbf{NBPE-MF}& \textbf{0.076}             & \textbf{0.062}                     & \textbf{0.1065} & \textbf{0.0841} \\ 
+    \textbf{NBPE-MF} & \textbf{0.076}             & \textbf{0.062}                     & \textbf{0.1065} & \textbf{0.0841} \\ 
     \bottomrule
   \end{tabular}
 \end{table}
 
 \section{Conclusion}
-We propose an effective and data-efficient method of combing differently sourced datasets for training recommender systems. Our approach provides yet another way of accurate propensity estimation and explores a new potential of cross-dataset joint learning. We believe real-world recommender systems will benefit from data-centric frameworks like ours.
+We propose an effective and data-efficient method of combing differently sourced datasets for training recommender systems. Our approach provides yet another way of accurate propensity estimation and explores a new potential of cross-dataset joint learning. We demonstrate that our method outperforms naive propensity estimation and straightforward dataset mixing. and  We believe real-world recommender systems will benefit from data-centric frameworks like ours.
 
 \section*{Acknowledgements}
 This work is supported in part by a Cornell CSURP Grant,  {\color{blue}{\textit{is there some source of funding you'd like to acknowledge?}}}
