@@ -150,7 +150,7 @@ where $r_{u,i}$ denotes the value of a rating. The numerator can be easily appro
 If the corresponding rating is not captured in $D'$, we set its propensity to the average propensity.
 
 \section{Experiment}
-We designed experiments to verify the performance of our cross-dataset model. We trained on two datasets with $\beta =1$ in training set and used three baseline algorithms for comparison. In this paper we assumed the highly quantized dataset is unbiased with $\beta=0$, which is probable when the implicit dataset reflects users' spontaneous choices. Theoretically, our framework will work as long as the highly quantized dataset is less biased. We selected the root mean square error (RMSE) and the mean absolute error (MAE) as performance metrics. 
+We designed experiments to verify the performance of our cross-dataset model. We trained on two datasets (as in section 3) with $\beta =1$ in training set and used three baseline algorithms for comparison. In this paper we assumed the highly quantized dataset is unbiased with $\beta=0$, which is probable when the implicit dataset reflects users' spontaneous choices. Empirically, our framework will work as long as the highly quantized dataset is less biased. We selected the root mean square error (RMSE) and the mean absolute error (MAE) as performance metrics. 
 
 \subsection{Baselines}
 \textbf{Matrix Factorization (MF.)}
