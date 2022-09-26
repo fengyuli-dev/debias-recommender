@@ -111,15 +111,14 @@ Discussions on countering selection bias, e.g. in recommender systems, with IPS-
 \section{Susceptibility to Selection Bias}
 We first examine the susceptibility to selection bias of differently quantized data by manually introducing biased distributions of various degrees to the differently quantized training sets. It is crucial for us that the highly quantized dataset does not exhibit particular weakness when facing selection bias so that they can be properly adopted for propensity estimation.
 
-\subsection{Simulated Environment for Controlling Bias \textcolor{blue}{and Quantization}}
-Since selection bias is uncontrollable in a dataset completely drawn from real-world, we have to adopt a simulated environment \cite{krauth2020offline} with both semi-synthetic and synthetic datasets explained below. In our environment, we propose the \textbf{softmax observation model} and introduce a hyperparameter $\beta$ to control the degree of bias. For a rating matrix $R$, the corresponding probability matrix of each rating being observed is $\Pr(R_{u,i}\text{ is observed}) = k\text{softmax}(\beta R_{u,i})$, where $k$ is set so that the expected proportion of observed ratings is controlled. In this observation model, a larger $\beta$ induces more significant bias at an exponential rate. In our experiment we assume constantly $10\%$ of ratings are observed among $1000$ users and $1000$ items.
+\subsection{Simulated Environment for Controlling Bias and Quantization}
+Since selection bias is uncontrollable in a dataset completely drawn from real-world, we have to adopt a simulated environment \cite{krauth2020offline} with both semi-synthetic and synthetic datasets explained below. In our environment, we propose the \textbf{softmax observation model} and introduce a hyperparameter $\beta$ to control the degree of bias. For a rating matrix $R$, the corresponding probability matrix of each rating being observed is $\Pr(R_{u,i}\text{ is observed}) = k\,\text{softmax}(\beta R_{u,i})$, where $k$ is set so that the expected proportion of observed ratings is controlled. In this observation model, a larger $\beta$ induces more significant bias at an exponential rate. In our experiment we assume constantly $10\%$ of ratings are observed among $1000$ users and $1000$ items. Quantization is simulated by mapping the same underlying continuous-valued rating matrix $R$ to $n$ different quantities evenly spaced between $0$ and $1$. In all experiments we used only 2, 3, and 5 as quantization levels.
 % \begin{figure}
 %   \centering
 %   \includegraphics[width=\textwidth]{visualize.png}
 %   \caption{Visualizing the effect of controlling bias}
 % \end{figure}
 
-\textcolor{blue}{Mention how we control quantization: mapping the same underlying continuous-valued $R_{ui}$ to $n$ different quantities evenly spaced between $0$ and $1$, i.e. 0 and 1 or 0, 0.25, 0.5, 0.75, 1}
 
 \subsection{Datasets}
 \textbf{Imputed ML100K Dataset.}
@@ -134,7 +133,7 @@ The latent factors dataset is a synthetic dataset that models users and item wit
   \includegraphics[width=\textwidth]{1.png}
   \caption{The effect of selection bias is not affected by quantization}
 \end{figure}
-Figure 1 shows the performance on the latent factors dataset of 3 classic algorithms: user-KNN, item-KNN, and SVD matrix factorization. \textcolor{blue}{Performance is evaluated by RMSE on the dense quantized (or not?) rating matrix}. The three differently quantized variants come from the same source distribution (the dataset). Gaussian noise is introduced for simulating real-world user variability. Shaded regions denote the regions between quartiles \textcolor{blue}{overs [number] trials of re-sampled training data}. 
+Figure 1 shows the performance on the latent factors dataset of 3 classic algorithms: user-KNN, item-KNN, and SVD matrix factorization. Performance is evaluated by RMSE on the dense ground truth rating matrix. The three differently quantized variants come from the same source distribution (the dataset). Gaussian noise is introduced for simulating real-world user variability. Shaded regions denote the regions between quartiles overs 10 trials of re-sampled training data. 
 
 Although the RMSE grows consistently as sampling bias $\beta$ increases, differently quantized datasets do not exhibit significantly different growth rates. The discrepancy between the RMSE of differently quantized datasets with the same $\beta$ can be ascribed to the inherent information loss from quantization \cite{widrow1996statistical}. We reason that since the effect of bias on rating predictions is consistent across quantizations, the subsequent effect on propensity estimation should be identical as accurate propensity estimation follows accurate rating predictions. Therefore, differently quantized datasets should also be equally susceptible to selection bias when used for propensity scoring. We thus conclude it is a viable approach to use the more quantized, less biased dataset for propensity estimation. Furthermore, Figure 1 visualizes the damaging effect of selection bias. 
 The less quantized data with high sampling bias ($\beta=2.5$) performs just as poorly as the coarse binary dataset with no sampling bias ($\beta=0$),
@@ -160,11 +159,11 @@ where $r_{u,i}$ denotes the value of a rating. The numerator can be easily appro
 If the corresponding rating is not captured in $D'$, we set its propensity to the average propensity.
 
 \section{Experiment}
-We designed experiments to verify the performance of our cross-dataset model. We trained on two datasets (as in section 3) with $\beta =1$ in training set and used three baseline algorithms for comparison. In this paper we assumed the highly quantized dataset is unbiased with $\beta=0$, which is probable when the implicit dataset reflects users' spontaneous choices. Empirically, our framework will work as long as the highly quantized dataset is less biased. We selected the root mean square error (RMSE) and the mean absolute error (MAE) \textcolor{blue}{over the dense rating matrix (?)} as performance metrics. 
+We designed experiments to verify the performance of our cross-dataset model. We trained on two datasets (as in section 3) with $\beta =1$ in training set and used three baseline algorithms for comparison. In this paper we assumed the highly quantized dataset is unbiased with $\beta=0$, which is probable when the implicit dataset reflects users' spontaneous choices. Empirically, our framework will work as long as the highly quantized dataset is less biased. We selected the root mean square error (RMSE) and the mean absolute error (MAE) over the dense ground truth rating matrix as performance metrics. 
 
 \subsection{Baselines}
 \textbf{Matrix Factorization (MF.)}
-As a simple baseline, we adopt the standard matrix factorization that does not adopt propensity estimation or importance weighting \textcolor{blue}{and uses only the training set}.
+As a simple baseline, we adopt the standard matrix factorization that does not adopt propensity estimation or importance weighting and uses only the less quantized training set.
 
 \textbf{Naive Propensity Estimator (NPE-MF.)}
 The naive propensity estimator naively estimates the propensity scores from the already biased training data and plugs in the results to equation 1.
