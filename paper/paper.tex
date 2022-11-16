@@ -122,7 +122,7 @@ Since selection bias is uncontrollable in a dataset completely drawn from real-w
 
 \subsection{Datasets}
 \textbf{Imputed ML100K Dataset.}
-The ML100K dataset provides 100 thousand MNAR ratings across 1683 movies rated by 944 users and is a standard dataset used for recommender systems. Since we need the ground truth ratings for controlling bias, we use imputed ratings computed via standard matrix factorization \cite{krauth2020offline}. We normalize ratings between 0 and 1 for consistency with the other dataset. 
+The ML100K dataset provides 100 thousand MNAR (missing-not-at-random) ratings across 1683 movies rated by 944 users and is a standard dataset used for recommender systems. Since we need the ground truth ratings for controlling bias, we use imputed ratings computed via standard matrix factorization \cite{krauth2020offline}. We normalize ratings between 0 and 1 for consistency with the other dataset. 
 
 \textbf{Latent Factors Simulated Dataset.}
 The latent factors dataset is a synthetic dataset that models users and item with Gaussian latent vectors to simulate preferences \cite{koren2008factorization,koren2009matrix}; both also have biases. The environment is provided by \cite{krauth2020offline}.
@@ -146,11 +146,11 @@ The above experiments are repeated with the semi-synthetic ML100K environment an
 With the above result, we now turn to our cross-dataset matrix factorization model. Matrix factorization is a simple recommender model that decomposes the rating matrix based on known entries and then predicts the unknown entries \cite{koren2009matrix}. We integrate propensities as in \citep{schnabel2016recommendations} and formulated the recommendation problem as the empirical risk minimization framework below. 
 \begin{equation} \argmin_{V,W,A} \frac{1}{N}\left(\frac{(Y_{u,i}- (V_u^TW_i + A))^2}{P_{u,i}} \right) + c \Vert A \Vert^2
 \end{equation}
-where $A = \{ b_u, b_i, \mu \}$ represents the standard bias parameters (offset), $V$ and $W$ are the decomposed vectors, $\hat{Y} = V_u^TW_i + A$ is the predicted rating, $N$ is the number of observed ratings, and $c \Vert A \Vert^2$ is the regularizer. The inverse propensity scores $\nicefrac{1}{P_{u,i}}$ are multiplied to each rating during learning, which is analogous to re-weighting ratings based on their biases.
+where $A = \{ b_u, b_i, \mu \}$ represents the standard bias parameters (offset), $Y$ is the ground truth ratings, $V$ and $W$ are the decomposed vectors, $\hat{Y} = V_u^TW_i + A$ is the predicted rating, $N$ is the number of observed ratings, and $c \Vert A \Vert^2$ is the regularizer. The inverse propensity scores $\nicefrac{1}{P_{u,i}}$ are multiplied to each rating during learning, which is analogous to re-weighting ratings based on their biases.
 
 Denote the biased training set as $D$. we propose the \textbf{naive-bayes propensity estimator} (NBPE-MF) from a more quantized (binary) dataset $D'$. Essentially,
 \begin{equation} 
-  P_{u,i} = \Pr(Y_{u,i} \text{ is observed} \mid Y_{u,i} = r_{u,i}) = \frac{\Pr(Y_{u,i} = r_{u,i} \mid Y_{u,i} \text{ is observed})}{\Pr(Y_{u,i} = r_{u,i})},
+  P_{u,i} = \Pr(Y_{u,i} \text{ is observed} \mid Y_{u,i} = r_{u,i}) = \frac{\Pr(Y_{u,i} = r_{u,i} \mid Y_{u,i} \text{ is observed})\Pr( Y_{u,i} \text{ is observed})}{\Pr(Y_{u,i} = r_{u,i})},
 \end{equation}
 where $r_{u,i}$ denotes the value of a rating. The numerator can be easily approximated from the dataset, but the denominator requires additional data from less biased sources. In this paper, we estimate the denominator from the less biased dataset using a categorical naive-bayes model. We use $D'$ as a mask to hide biased ratings in the training set from propensity estimation. In other words, $Y_{u,i} \text{ is considered observed}$ only when $D'_{u,i} \text{ is observed}$:
 \begin{equation} 
